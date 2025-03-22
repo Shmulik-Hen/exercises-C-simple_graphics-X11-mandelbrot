@@ -1,12 +1,18 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <stdexcept>
+#include <vector>
+#include <stdint.h>
+#include <common.h>
 #include <runner_x11.h>
 
 namespace runner_ns_x11 {
 
-// using namespace graphics_ns_base;
-// using namespace graphics_ns_base::graphics_ns_x11;
+const int DEFAULT_WIDTH  = 1024;
+const int DEFAULT_HEIGHT = 768;
+const int DEFAULT_ITERS = 400;
+const char* DEFAULT_NAME = "Mandelbrot set";
 
 #define KEY_ESCAPE     9
 #define KEY_SPACEBAR  65
@@ -15,13 +21,72 @@ namespace runner_ns_x11 {
 #define KEY_DOWN     116
 #define KEY_LEFT     113
 
-runner::runner(graphics& g) :
-	_g{&g},
+void runner::init_values()
+{
+	_md = {
+		.iterations = DEFAULT_ITERS,
+		.width = DEFAULT_WIDTH,
+		.height = DEFAULT_HEIGHT,
+	};
+
+	_colors = new color_vec {
+		graphics_base::dark_purple,
+		graphics_base::purple,
+		graphics_base::bright_purple,
+		graphics_base::dark_blue,
+		graphics_base::blue,
+		graphics_base::bright_blue,
+		graphics_base::dark_green,
+		graphics_base::green,
+		graphics_base::bright_green,
+		graphics_base::dark_yellow,
+		graphics_base::yellow,
+		graphics_base::bright_yellow,
+		graphics_base::dark_orange,
+		graphics_base::orange,
+		graphics_base::bright_orange,
+		graphics_base::dark_red,
+		graphics_base::red,
+		graphics_base::bright_red,
+		graphics_base::black
+	};
+
+	_num_colors = _colors->size();
+	_colors_step = _md.iterations / _num_colors;
+
+	std::cout << "num: " << _num_colors << SEP << "step: " << _colors_step << std::endl;
+};
+
+runner::runner() :
 	_is_running{true}
 {
-	_xstep = _g->get_width()  / 10;
+	init_values();
+
+	_g = new graphics(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_NAME);
+	if (!_g) {
+		throw std::runtime_error("failed to create the graphic context");
+	}
+
+	// _m = new mandelbrot(_md);
+	// if (!_m) {
+	// 	throw std::runtime_error("failed to create the mandelbrot set");
+	// }
+
+	_xstep = _g->get_width() / 10;
 	_ystep = _g->get_height() / 10;
 	_sz = {_xstep, _ystep};
+};
+
+runner::~runner()
+{
+	if (_colors)
+		delete _colors;
+
+	if (_m)
+		delete _m;
+
+	if (_g)
+		delete _g;
 };
 
 bool runner::get_event(XEvent& event)
@@ -117,10 +182,46 @@ void runner::draw() const
 		_g->show_snapshot();
 	}
 	else {
+		// mandelbrot::plane p;
+		// create_set(p);
+		// display_set(p);
 		_g->demo();
 		_g->take_snapshot();
 	}
 	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
+};
+
+void runner::create_set(mandelbrot::plane& p) const
+{
+	_m->compute(p);
+};
+
+void runner::display_set(mandelbrot::plane& p) const
+{
+	std::cout << "Entry " << std::endl;
+	int rc = _g->take_snapshot();
+	std::cout << "rc: " << rc << std::endl;
+
+	for (uint32_t y = 0; y < p.size(); y++) {
+		mandelbrot::row r = p[y];
+		for (uint32_t x = 0; x < r.size(); x++) {
+			graphics_base::color_idx c = convert_to_color(r[x]);
+			graphics_base::point pt = {x, y};
+			std::cout << "x: " << x << SEP << "y: " << y << SEP << "c: " << c << std::endl;
+			rc = _g->put_pixel(pt, c);
+			std::cout << "rc: " << rc << std::endl;
+		}
+	}
+
+	rc = _g->show_snapshot();
+	std::cout << "rc: " << rc << std::endl;
+	std::cout << "Exit " << std::endl;
+};
+
+graphics_base::color_idx runner::convert_to_color(uint32_t v) const
+{
+	uint32_t idx =  v / _colors_step;
+	return _colors->at(idx);
 };
 
 void runner::run()

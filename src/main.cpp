@@ -9,8 +9,7 @@ using namespace graphics_ns_base::graphics_ns_x11;
 int main()
 {
 	try {
-		graphics g;
-		runner r(g);
+		runner r;
 		r.run();
 	}
 	catch (const std::exception& e) {

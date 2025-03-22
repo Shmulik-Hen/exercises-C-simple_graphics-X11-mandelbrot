@@ -1,14 +1,15 @@
 #include <stdexcept>
 #include <utility>
 #include <string.h>
+#include <common.h>
 #include <graphics_x11.h>
 
 namespace graphics_ns_base {
 
 namespace graphics_ns_x11 {
 
-const int DEFAULT_WIDTH  = 800;
-const int DEFAULT_HEIGHT = 600;
+const uint32_t DEFAULT_WIDTH  = 800;
+const uint32_t DEFAULT_HEIGHT = 600;
 const char* DEFAULT_NAME = "Graphics_X11";
 
 #define GMASK 0x00FFFFFF
@@ -56,7 +57,7 @@ void graphics::init_colors()
 	_colors->clear();
 
 	int errors = 0;
-	for (int i = __first_color__; i < __last_color__; i++) {
+	for (uint32_t i = __first_color__; i < __last_color__; i++) {
 		color_idx idx = (color_idx)i;
 		const char *s = tmp_col[i];
 
@@ -217,7 +218,7 @@ graphics::graphics(const char* s) :
 	}
 };
 
-graphics::graphics(int w, int h) :
+graphics::graphics(uint32_t w, uint32_t h) :
 	_width{w},
 	_height{h},
 	_name{DEFAULT_NAME}
@@ -230,7 +231,7 @@ graphics::graphics(int w, int h) :
 	}
 };
 
-graphics::graphics(int w, int h, const char *s) :
+graphics::graphics(uint32_t w, uint32_t h, const char *s) :
 	_width{w},
 	_height{h},
 	_name{s}
@@ -267,7 +268,7 @@ graphics::~graphics()
 
 const graphics_base::bounds_status graphics::is_in_bounds(point p) const
 {
-	int rc = BOUNDS_OK;
+	uint32_t rc = BOUNDS_OK;
 
 	if (p.x < 0 || p.x > _width)
 		rc |= BOUNDS_X_OUT;
@@ -423,9 +424,10 @@ void graphics::refresh() const
 
 void graphics::demo() const
 {
-	int x = 0, y = 0, gap = 50, rc;
 	point tl, br, p;
 	size sz;
+	uint32_t x = 0, y = 0, gap = 50;
+	int rc;
 
 #ifdef DEBUG_GRFX
 	std::cout << DBG_PFX << STR("Number of colors: ", 1) << DEC(get_num_colors(), 2) << std::endl;
@@ -527,7 +529,7 @@ void graphics::demo() const
 	draw_pixel(p, bright_yellow);
 
 	x += gap;
-	for (int i = 0; i < 300; i++) {
+	for (uint32_t i = 0; i < 300; i++) {
 		color_idx c = (color_idx)(i % get_num_colors());
 #ifdef DEBUG_GRFX
 		std::cout << DBG_PFX << STR("color: ", 1) << DEC(c, 2) << std::endl;
@@ -581,6 +583,19 @@ int graphics::show_snapshot() const
 
 	XPutImage(_display, _window, _gc, _ximage, 0, 0, 0, 0, _width, _height);
 	return 0;
+};
+
+int graphics::put_pixel(point p, color_idx i) const
+{
+	if (!_ximage) {
+		return -1;
+	}
+
+	if (!_ximage->f.put_pixel) {
+		return -2;
+	}
+
+	return _ximage->f.put_pixel(_ximage, p.x, p.y, get_color_val(i));
 };
 
 } // namespace graphics_ns_x11

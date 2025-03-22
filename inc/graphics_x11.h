@@ -2,32 +2,10 @@
 #define __GRAPHICS_X11_H__
 
 #include <map>
-#include <string>
-#include <iostream>
-#include <iomanip>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <graphics_base.h>
 
-const std::string ERR_PFX	= "Error: ";
-const std::string WARN_PFX	= "Warning: ";
-const std::string INFO_PFX	= "Info: ";
-const std::string HEX_PFX	= "0x";
-const std::string SEP		= ", ";
-
-#define HEX(n, w) HEX_PFX << std::hex << std::setw((w)) << std::setfill('0') << std::right << (n)
-#define DEC(n, w) std::dec << std::setw((w)) << std::setfill(' ') << std::right << (n)
-#define STR(s, w) std::setw((w)) << std::setfill(' ') << std::left << (s)
-#define ERR(s)	  std::cout << STR(ERR_PFX, 1) << STR((s), 1) << std::endl;
-#define WARN(s)	  std::cout << STR(WARN_PFX, 1) << STR((s), 1) << std::endl;
-#define INFO(s)	  std::cout << STR(INFO_PFX, 1) << STR((s), 1) << std::endl;
-
-#ifdef DEBUG_GRFX
-const std::string DBG_PFX	= "Debug: ";
-#define DBG(s)    std::cout << STR(DBG_PFX, 1) << STR((s), 1) << std::endl
-#else
-#define DBG(...)
-#endif //DEBUG_GRFX
 
 namespace graphics_ns_base {
 
@@ -61,8 +39,8 @@ private:
 	int _screen;
 	Colormap _cmap;
 	XImage* _ximage {NULL};
-	int _width;
-	int _height;
+	uint32_t _width;
+	uint32_t _height;
 	color_idx _bg {black};
 	color_idx _fg {white};
 	const char* _name;
@@ -74,16 +52,16 @@ private:
 public:
 	graphics();
 	graphics(const char*);
-	graphics(int, int);
-	graphics(int, int, const char*);
+	graphics(uint32_t, uint32_t);
+	graphics(uint32_t, uint32_t, const char*);
 	~graphics();
 
 	// implement pure virtuals
 	const bounds_status is_in_bounds(point) const;
 	const bool is_valid_color(color_idx) const;
-	inline const int get_num_colors() const {return __last_color__;};
-	inline const int get_width() const {return _width;};
-	inline const int get_height() const {return _height;};
+	inline const uint32_t get_num_colors() const {return __last_color__;};
+	inline const uint32_t get_width() const {return _width;};
+	inline const uint32_t get_height() const {return _height;};
 	const color_val get_color_val(color_idx) const;
 	const std::string get_color_name(color_idx) const;
 	void draw_pixel(point, color_idx) const;
@@ -98,7 +76,8 @@ public:
 	int take_snapshot();
 	int drop_snapshot();
 	int show_snapshot() const;
-	inline const bool snapshot_exists() const {return (_ximage != NULL);};
+	int put_pixel(point, color_idx) const;
+	inline const bool snapshot_exists() const { return (_ximage != NULL); };
 };
 
 } // namespace graphics_ns_x11

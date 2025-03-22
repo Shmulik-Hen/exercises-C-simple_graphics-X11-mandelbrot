@@ -7,7 +7,7 @@
 namespace graphics_ns_base
 {
 
-typedef unsigned long color_val;
+typedef uint32_t color_val;
 
 class graphics_base
 {
@@ -61,21 +61,22 @@ public:
 
 	struct point
 	{
-		int x = 0;
-		int y = 0;
+		uint32_t x = 0;
+		uint32_t y = 0;
 	};
 
 	struct size
 	{
-		int w = 0;
-		int h = 0;
+		uint32_t w = 0;
+		uint32_t h = 0;
 	};
 
+	virtual ~graphics_base() {};
 	virtual const bounds_status is_in_bounds(point) const = 0;
 	virtual const bool is_valid_color(color_idx) const = 0;
-	virtual const int get_num_colors() const = 0;
-	virtual const int get_width() const = 0;
-	virtual const int get_height() const = 0;
+	virtual const uint32_t get_num_colors() const = 0;
+	virtual const uint32_t get_width() const = 0;
+	virtual const uint32_t get_height() const = 0;
 	virtual const color_val get_color_val(color_idx) const = 0;
 	virtual const std::string get_color_name(color_idx) const = 0;
 	virtual void draw_pixel(point, color_idx) const = 0;
