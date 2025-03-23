@@ -1,16 +1,17 @@
-#include <mandelbrot.h>
+// #define DEBUG_GRFX
 #include <common.h>
+#include <mandelbrot.h>
 
 namespace mandelbrot_ns {
 
-#define DEF_ITERS	200
-#define DEF_WIDTH	400
-#define DEF_HEIGHT	300
-#define DEF_LEFT	-1.5
-#define DEF_RIGHT	1.0
-#define DEF_TOP		1.0
-#define DEF_BOTTOM	-1.0
-#define DEF_LIMIT	2.0
+const uint32_t DEF_ITERS  = 200;
+const uint32_t DEF_WIDTH  = 400;
+const uint32_t DEF_HEIGHT = 300;
+const double DEF_LEFT	= -1.5;
+const double DEF_RIGHT	= 1.0;
+const double DEF_TOP	= 1.0;
+const double DEF_BOTTOM	= -1.0;
+const double DEF_LIMIT	= 2.0;
 
 mandelbrot::mand_data def_data = {
 	DEF_ITERS,
@@ -21,20 +22,6 @@ mandelbrot::mand_data def_data = {
 	DEF_TOP,
 	DEF_BOTTOM,
 	DEF_LIMIT
-};
-
-uint32_t mandelbrot::is_in_set(point& t) const
-{
-	point c0 {t}, z{0, 0};
-	uint32_t iters = 0;
-
-	while (iters++ < _data.iterations) {
-		z = z * z + c0;
-		if (std::abs(z) > _data.limit)
-			break;
-	}
-
-	return iters;
 };
 
 mandelbrot::mandelbrot()
@@ -73,34 +60,45 @@ mandelbrot::mandelbrot(mand_data &d)
 	_xstep = (_data.right - _data.left) / (double)_data.width;
 	_ystep = (_data.top - _data.bottom) / (double)_data.height;
 
-	std::cout << "iterations: " << _data.iterations << std::endl;
-	std::cout << "width: " << _data.width << std::endl;
-	std::cout << "height: " << _data.height << std::endl;
-	std::cout << "left: " << _data.left << std::endl;
-	std::cout << "right: " << _data.right << std::endl;
-	std::cout << "top: " << _data.top << std::endl;
-	std::cout << "bottom: " << _data.bottom << std::endl;
-	std::cout << "limit: " << _data.limit << std::endl;
-	std::cout << "xstep: " << _xstep << std::endl;
-	std::cout << "ystep: " << _ystep << std::endl;
+	// DBG("iterations: ") << _data.iterations << ENDL;
+	// DBG("width: ") << _data.width << ENDL;
+	// DBG("height: ") << _data.height << ENDL;
+	// DBG("left: ") << _data.left << ENDL;
+	// DBG("right: ") << _data.right << ENDL;
+	// DBG("top: ") << _data.top << ENDL;
+	// DBG("bottom: ") << _data.bottom << ENDL;
+	// DBG("limit: ") << _data.limit << ENDL;
+	// DBG("xstep: ") << _xstep << ENDL;
+	// DBG("ystep: ") << _ystep << ENDL;
 };
 
 mandelbrot::~mandelbrot()
 {
 };
 
-void mandelbrot::compute(plane& p)
+uint32_t mandelbrot::is_in_set(point& c0) const
 {
-	p.resize(_data.height);
+	point z{0.0, 0.0};
+	uint32_t it = 0;
 
-	for (uint32_t y = 0; y < _data.height; y++) {
-		row r = p[y];
-		r.resize(_data.width);
-		double y_pos = (double)y * _ystep;
-		for (uint32_t x = 0; x < _data.width; x++) {
-			double x_pos = (double)x * _xstep;
-			point d = {x_pos, y_pos};
-			r[x] = is_in_set(d);
+	while (it++ < _data.iterations) {
+		z = z * z + c0;
+		if (std::abs(z) > _data.limit)
+			break;
+	}
+
+	return it;
+};
+
+void mandelbrot::compute(plane_t& p)
+{
+	uint32_t x, y;
+	double x_pos, y_pos;
+
+	for (y=0, y_pos=_data.top; y<p.size() && y_pos>_data.bottom; y++, y_pos-=_ystep) {
+		for (x=0, x_pos=_data.left; x<p[y].size() && x_pos<_data.right; x++, x_pos+=_xstep) {
+			point pt = {x_pos, y_pos};
+			p[y][x] = is_in_set(pt);
 		}
 	}
 };

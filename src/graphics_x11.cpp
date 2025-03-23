@@ -19,13 +19,6 @@ const char* DEFAULT_NAME = "Graphics_X11";
 #define B(x) ((x) & CMASK)
 #define RGB(r, g, b) ((R(r) + G(g) + B(b)) & GMASK)
 
-#ifdef DEBUG_GRFX
-const std::string PIXEL_PFX	= "pixel: ";
-const std::string LINE_PFX	= "line: ";
-const std::string RECT_PFX	= "rect: ";
-const std::string TEXT_PFX	= "text: ";
-#endif //DEBUG_GRFX
-
 void graphics::init_colors()
 {
 	const char *tmp_col[get_num_colors()] =  {
@@ -62,7 +55,7 @@ void graphics::init_colors()
 		const char *s = tmp_col[i];
 
 		if (!strlen((s ? s : ""))) {
-			WARN("empty string");
+			WARN("empty string") << ENDL;
 			errors++;
 			continue;
 		}
@@ -70,7 +63,7 @@ void graphics::init_colors()
 		XColor xc, def;
 		int rc = XLookupColor(_display, _cmap, s, &xc, &def);
 		if (rc != 1) {
-			WARN("color not found");
+			WARN("color not found") << ENDL;
 			errors++;
 			continue;
 		}
@@ -110,22 +103,22 @@ void graphics::init_colors()
 	}
 
 #ifdef DEBUG_GRFX
-	std::cout << _colors->size() << std::endl;
+	DBG << _colors->size() << ENDL;
 	for (color::iterator it = _colors->begin(); it != _colors->end(); it++) {
 	  color_idx c = it->first;
 	  color_data d = it->second;
 	  std::string s = d.name + ',';
 
-	  std::cout << "-----" << std::endl
-			<< DEC(c, 2) << std::endl
-			<< STR(s, 15) << HEX(d.val, 8) << std::endl
+	  DBG << "-----" << ENDL
+			<< DEC(c, 2) << ENDL
+			<< STR(s, 15) << HEX(d.val, 8) << ENDL
 			<< HEX(d.rgb.r, 2) << SEP
 			<< HEX(d.rgb.g, 2) << SEP
-			<< HEX(d.rgb.g, 2) << SEP << std::endl
-			<< d.bright << SEP << d.done << std::endl;
+			<< HEX(d.rgb.g, 2) << SEP << ENDL
+			<< d.bright << SEP << d.done << ENDL;
 	}
 
-	std::cout << "-----" << std::endl;
+	DBG << "-----" << ENDL;
 #endif
 };
 
@@ -146,7 +139,7 @@ void graphics::init_graphics()
 	try {
 		init_colors();
 	}
-	catch (std::runtime_error& e) {
+	catch (const std::runtime_error& e) {
 		throw;
 	}
 
@@ -315,14 +308,13 @@ void graphics::draw_pixel(point p, color_idx i) const
 	std::string s = get_color_name(i) + SEP;
 	int len = std::max((int)s.length(), 15);
 
-	std::cout << DBG_PFX << PIXEL_PFX
-		<< DEC(i, 2) << SEP << STR(s, len)
+	DBG << DEC(i, 2) << SEP << STR(s, len)
 		<< DEC(p.x, 4) << SEP << DEC(p.y, 4) << SEP
-		<< HEX(get_color_val(i), 8) << std::endl;
+		<< HEX(get_color_val(i), 8) << ENDL;
 #endif //DEBUG_GRFX
 
 	if (is_in_bounds(p) != BOUNDS_OK) {
-		WARN("Out of bounds");
+		WARN("Out of bounds") << ENDL;
 		return;
 	}
 
@@ -336,15 +328,14 @@ void graphics::draw_line(point tl, point br, color_idx i) const
 	std::string s = get_color_name(i) + SEP;
 	int len = std::max((int)s.length(), 15);
 
-	std::cout << DBG_PFX << LINE_PFX
-		<< DEC(i, 2) << SEP << STR(s, len)
+	DBG << DEC(i, 2) << SEP << STR(s, len)
 		<< DEC(tl.x, 4) << SEP << DEC(tl.y, 4) << SEP
 		<< DEC(br.x, 4) << SEP << DEC(br.y, 4) << SEP
-		<< HEX(get_color_val(i), 8) << std::endl;
+		<< HEX(get_color_val(i), 8) << ENDL;
 #endif //DEBUG_GRFX
 
 	if (is_in_bounds(tl) != BOUNDS_OK || is_in_bounds(br) != BOUNDS_OK) {
-		WARN("Out of bounds");
+		WARN("Out of bounds") << ENDL;
 		return;
 	}
 
@@ -358,15 +349,14 @@ void graphics::draw_rect(point tl, size sz, color_idx i, bool fill) const
 	std::string s = get_color_name(i) + SEP;
 	int len = std::max((int)s.length(), 15);
 
-	std::cout << DBG_PFX << RECT_PFX
-		<< DEC(i, 2) << SEP << STR(s, len)
+	DBG << DEC(i, 2) << SEP << STR(s, len)
 		<< DEC(tl.x, 4) << SEP << DEC(tl.y, 4) << SEP
 		<< DEC(sz.w, 4) << SEP << DEC(sz.h, 4) << SEP
-		<< HEX(get_color_val(i), 8) << std::endl;
+		<< HEX(get_color_val(i), 8) << ENDL;
 #endif //DEBUG_GRFX
 
 	if (is_in_bounds(tl) != BOUNDS_OK || is_in_bounds({tl.x+sz.w, tl.y+sz.h}) != BOUNDS_OK) {
-		WARN("Out of bounds");
+		WARN("Out of bounds") << ENDL;
 		return;
 	}
 
@@ -385,14 +375,13 @@ void graphics::draw_text(point p, std::string s, color_idx i) const
 	std::string s2 = get_color_name(i) + SEP;
 	int len = std::max((int)s2.length(), 15);
 
-	std::cout << DBG_PFX << TEXT_PFX
-		<< DEC(i, 2) << SEP << STR(s2, len)
+	DBG << DEC(i, 2) << SEP << STR(s2, len)
 		<< DEC(p.x, 4) << SEP << DEC(p.y, 4) << SEP
-		<< HEX(get_color_val(i), 8) << std::endl;
+		<< HEX(get_color_val(i), 8) << ENDL;
 #endif //DEBUG_GRFX
 
 	if (is_in_bounds(p) != BOUNDS_OK) {
-		WARN("Out of bounds");
+		WARN("Out of bounds") << ENDL;
 		return;
 	}
 
@@ -430,7 +419,7 @@ void graphics::demo() const
 	int rc;
 
 #ifdef DEBUG_GRFX
-	std::cout << DBG_PFX << STR("Number of colors: ", 1) << DEC(get_num_colors(), 2) << std::endl;
+	DBG << STR("Number of colors: ", 1) << DEC(get_num_colors(), 2) << ENDL;
 #endif
 
 	// filled rects
@@ -532,11 +521,11 @@ void graphics::demo() const
 	for (uint32_t i = 0; i < 300; i++) {
 		color_idx c = (color_idx)(i % get_num_colors());
 #ifdef DEBUG_GRFX
-		std::cout << DBG_PFX << STR("color: ", 1) << DEC(c, 2) << std::endl;
+		DBG << STR("color: ", 1) << DEC(c, 2) << ENDL;
 #endif
 
 		if (!is_valid_color(c)) {
-			WARN("Not a valid color");
+			WARN("Not a valid color") << ENDL;
 			continue;
 		}
 

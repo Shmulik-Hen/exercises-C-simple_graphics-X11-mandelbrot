@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <stdint.h>
+// #define DEBUG_GRFX
 #include <common.h>
 #include <runner_x11.h>
 
@@ -23,10 +24,15 @@ const char* DEFAULT_NAME = "Mandelbrot set";
 
 void runner::init_values()
 {
+	_plane.resize(_g->get_height());
+	for (uint32_t i = 0; i < _g->get_height(); i++) {
+		_plane[i].resize(_g->get_width());
+	}
+
 	_md = {
 		.iterations = DEFAULT_ITERS,
-		.width = DEFAULT_WIDTH,
-		.height = DEFAULT_HEIGHT,
+		.width = _g->get_width(),
+		.height = _g->get_height(),
 	};
 
 	_colors = new color_vec {
@@ -54,27 +60,25 @@ void runner::init_values()
 	_num_colors = _colors->size();
 	_colors_step = _md.iterations / _num_colors;
 
-	std::cout << "num: " << _num_colors << SEP << "step: " << _colors_step << std::endl;
+	_xstep = _g->get_width() / 10;
+	_ystep = _g->get_height() / 10;
+	_sz = {_xstep, _ystep};
 };
 
 runner::runner() :
 	_is_running{true}
 {
-	init_values();
-
 	_g = new graphics(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_NAME);
 	if (!_g) {
 		throw std::runtime_error("failed to create the graphic context");
 	}
 
-	// _m = new mandelbrot(_md);
-	// if (!_m) {
-	// 	throw std::runtime_error("failed to create the mandelbrot set");
-	// }
+	_m = new mandelbrot(_md);
+	if (!_m) {
+		throw std::runtime_error("failed to create the mandelbrot set");
+	}
 
-	_xstep = _g->get_width() / 10;
-	_ystep = _g->get_height() / 10;
-	_sz = {_xstep, _ystep};
+	init_values();
 };
 
 runner::~runner()
@@ -87,6 +91,46 @@ runner::~runner()
 
 	if (_g)
 		delete _g;
+};
+
+graphics_base::color_idx runner::convert_to_color(uint32_t v) const
+{
+	return _colors->at(v / _colors_step);
+};
+
+void runner::create_set()
+{
+	_m->compute(_plane);
+};
+
+void runner::display_set() const
+{
+	for (uint32_t y = 0; y < _plane.size(); y++) {
+		for (uint32_t x = 0; x < _plane[y].size(); x++) {
+			graphics_base::color_idx c = convert_to_color(_plane[y][x]);
+			graphics_base::point pt = {x, y};
+			_g->draw_pixel(pt, c);
+			// rc = _g->put_pixel(pt, c);
+		}
+	}
+};
+
+void runner::draw()
+{
+#if 1
+	if (_g->snapshot_exists()) {
+		_g->show_snapshot();
+	}
+	else {
+		create_set();
+		display_set();
+		// _g->take_snapshot();
+	}
+	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
+#else
+	create_set();
+	display_set();
+#endif
 };
 
 bool runner::get_event(XEvent& event)
@@ -176,58 +220,9 @@ bool runner::handle_event(XEvent& event)
 	return ret;
 };
 
-void runner::draw() const
-{
-	if (_g->snapshot_exists()) {
-		_g->show_snapshot();
-	}
-	else {
-		// mandelbrot::plane p;
-		// create_set(p);
-		// display_set(p);
-		_g->demo();
-		_g->take_snapshot();
-	}
-	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
-};
-
-void runner::create_set(mandelbrot::plane& p) const
-{
-	_m->compute(p);
-};
-
-void runner::display_set(mandelbrot::plane& p) const
-{
-	std::cout << "Entry " << std::endl;
-	int rc = _g->take_snapshot();
-	std::cout << "rc: " << rc << std::endl;
-
-	for (uint32_t y = 0; y < p.size(); y++) {
-		mandelbrot::row r = p[y];
-		for (uint32_t x = 0; x < r.size(); x++) {
-			graphics_base::color_idx c = convert_to_color(r[x]);
-			graphics_base::point pt = {x, y};
-			std::cout << "x: " << x << SEP << "y: " << y << SEP << "c: " << c << std::endl;
-			rc = _g->put_pixel(pt, c);
-			std::cout << "rc: " << rc << std::endl;
-		}
-	}
-
-	rc = _g->show_snapshot();
-	std::cout << "rc: " << rc << std::endl;
-	std::cout << "Exit " << std::endl;
-};
-
-graphics_base::color_idx runner::convert_to_color(uint32_t v) const
-{
-	uint32_t idx =  v / _colors_step;
-	return _colors->at(idx);
-};
-
 void runner::run()
 {
 	XEvent event;
-	XFlush((Display*)_g->get_display());
 
 	while (_is_running) {
 		if (get_event(event)) {

@@ -25,18 +25,19 @@ private:
 	color_vec* _colors {NULL};
 	mandelbrot::mand_data _md;
 	bool _is_running{false};
+	mandelbrot::plane_t _plane;
 	uint32_t _xstep {0};
 	uint32_t _ystep {0};
 	int _num_colors {0};
 	int _colors_step {0};
 
+	void init_values();
+	graphics_base::color_idx convert_to_color(uint32_t) const;
+	void create_set();
+	void display_set() const;
+	void draw();
 	bool get_event(XEvent&);
 	bool handle_event(XEvent&);
-	void draw() const;
-	void init_values();
-	void create_set(mandelbrot::plane&) const;
-	void display_set(mandelbrot::plane&) const;
-	graphics_base::color_idx convert_to_color(uint32_t) const;
 
 public:
 	runner();

@@ -21,14 +21,13 @@ public:
 		double limit {0};
 	};
 
-	typedef uint32_t cell;
-	typedef std::vector<cell> row;
-	typedef std::vector<row> plane;
+	typedef std::vector<uint32_t> row_t;
+	typedef std::vector<row_t> plane_t;
 
 	mandelbrot();
 	mandelbrot(mand_data&);
 	~mandelbrot();
-	void compute(plane&);
+	void compute(plane_t&);
 
 private:
 	typedef std::complex<double> point;

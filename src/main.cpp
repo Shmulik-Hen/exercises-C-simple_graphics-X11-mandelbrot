@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <iostream>
+#include <common.h>
 #include <graphics_x11.h>
 #include <runner_x11.h>
 
@@ -13,7 +14,7 @@ int main()
 		r.run();
 	}
 	catch (const std::exception& e) {
-		std::cout << "Exception: " << e.what() << std::endl;
+		ERR("Exception: ") << e.what() << ENDL;
 		return -1;
 	}
 
