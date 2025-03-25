@@ -14,7 +14,7 @@ int main()
 		r.run();
 	}
 	catch (const std::exception& e) {
-		ERR("Exception: ") << e.what() << ENDL;
+		ERR("Exception: ") << e.what();
 		return -1;
 	}
 

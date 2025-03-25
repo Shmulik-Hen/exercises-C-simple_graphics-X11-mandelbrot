@@ -7,7 +7,7 @@ namespace mandelbrot_ns {
 const uint32_t DEF_ITERS  = 200;
 const uint32_t DEF_WIDTH  = 400;
 const uint32_t DEF_HEIGHT = 300;
-const double DEF_LEFT	= -1.5;
+const double DEF_LEFT	= -2.5;
 const double DEF_RIGHT	= 1.0;
 const double DEF_TOP	= 1.0;
 const double DEF_BOTTOM	= -1.0;
@@ -42,17 +42,17 @@ mandelbrot::mandelbrot(mand_data &d)
 	if (d.height)
 		_data.height = d.height;
 
-	if (d.left)
-		_data.left = d.left;
+	// if (d.left)
+	// 	_data.left = d.left;
 
-	if (d.right)
-		_data.right = d.right;
+	// if (d.right)
+	// 	_data.right = d.right;
 
-	if (d.top)
-		_data.top = d.top;
+	// if (d.top)
+	// 	_data.top = d.top;
 
-	if (d.bottom)
-		_data.bottom = d.bottom;
+	// if (d.bottom)
+	// 	_data.bottom = d.bottom;
 
 	if (d.limit)
 		_data.limit = d.limit;
@@ -60,20 +60,16 @@ mandelbrot::mandelbrot(mand_data &d)
 	_xstep = (_data.right - _data.left) / (double)_data.width;
 	_ystep = (_data.top - _data.bottom) / (double)_data.height;
 
-	// DBG("iterations: ") << _data.iterations << ENDL;
-	// DBG("width: ") << _data.width << ENDL;
-	// DBG("height: ") << _data.height << ENDL;
-	// DBG("left: ") << _data.left << ENDL;
-	// DBG("right: ") << _data.right << ENDL;
-	// DBG("top: ") << _data.top << ENDL;
-	// DBG("bottom: ") << _data.bottom << ENDL;
-	// DBG("limit: ") << _data.limit << ENDL;
-	// DBG("xstep: ") << _xstep << ENDL;
-	// DBG("ystep: ") << _ystep << ENDL;
-};
-
-mandelbrot::~mandelbrot()
-{
+	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
+	INFO(STR("width:", 12)  << DEC(_data.width, 3));
+	INFO(STR("height:", 12)  << DEC(_data.height, 3));
+	INFO(STR("left:", 12)  << FLT(_data.left, 6));
+	INFO(STR("right:", 12)  << FLT(_data.right, 6));
+	INFO(STR("top:", 12)  << FLT(_data.top, 6));
+	INFO(STR("bottom:", 12)  << FLT(_data.bottom, 6));
+	INFO(STR("limit:", 12)  << FLT(_data.limit, 6));
+	INFO(STR("xstep:", 12)  << FLT(_xstep, 6));
+	INFO(STR("ystep:", 12)  << FLT(_ystep, 6));
 };
 
 uint32_t mandelbrot::is_in_set(point& c0) const
@@ -81,10 +77,11 @@ uint32_t mandelbrot::is_in_set(point& c0) const
 	point z{0.0, 0.0};
 	uint32_t it = 0;
 
-	while (it++ < _data.iterations) {
+	while (it < _data.iterations) {
 		z = z * z + c0;
 		if (std::abs(z) > _data.limit)
 			break;
+		it++;
 	}
 
 	return it;
@@ -99,6 +96,8 @@ void mandelbrot::compute(plane_t& p)
 		for (x=0, x_pos=_data.left; x<p[y].size() && x_pos<_data.right; x++, x_pos+=_xstep) {
 			point pt = {x_pos, y_pos};
 			p[y][x] = is_in_set(pt);
+			DBG("iter: p[" << DEC(y, 1) << "][" << DEC(x, 1) << "] = " << DEC(p[y][x], 4)
+				<< SEP << FLT(y_pos, 6) << SEP << FLT(x_pos, 6));
 		}
 	}
 };

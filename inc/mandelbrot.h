@@ -26,7 +26,7 @@ public:
 
 	mandelbrot();
 	mandelbrot(mand_data&);
-	~mandelbrot();
+	~mandelbrot(){};
 	void compute(plane_t&);
 
 private:
