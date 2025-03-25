@@ -18,9 +18,9 @@ const std::string SEP		= ", ";
 #define DEC(n,w) std::dec << std::setw((w)) << std::setfill(' ') << std::right << (n)
 #define FLT(n,p) std::setprecision(p) << std::fixed << (n)
 #define STR(s,w) std::setw((w)) << std::setfill(' ') << std::left << (s)
-#define ERR(s)	 std::cerr << STR(ERR_PFX, 1)  << FUNC << s << ENDL
-#define WARN(s)	 std::cerr << STR(WARN_PFX, 1) << FUNC << s << ENDL
-#define INFO(s)	 std::cout << STR(INFO_PFX, 1) << FUNC << s << ENDL
+#define ERR(s)	 std::cerr << STR(ERR_PFX, 1)  << s << ENDL
+#define WARN(s)	 std::cerr << STR(WARN_PFX, 1) << s << ENDL
+#define INFO(s)	 std::cout << STR(INFO_PFX, 1) << s << ENDL
 
 #ifdef DEBUG_GRFX
 const std::string DBG_PFX	= "Debug: ";

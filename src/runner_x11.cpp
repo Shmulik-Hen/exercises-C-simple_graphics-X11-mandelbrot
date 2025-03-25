@@ -1,5 +1,3 @@
-#include <chrono>
-#include <thread>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -10,9 +8,9 @@
 
 namespace runner_ns_x11 {
 
-const int DEFAULT_WIDTH  = 400;
-const int DEFAULT_HEIGHT = 300;
-const int DEFAULT_ITERS  = 400;
+const int DEFAULT_WIDTH  = 1024;
+const int DEFAULT_HEIGHT = DEFAULT_WIDTH * 9 / 16;
+const int DEFAULT_ITERS  = 30;
 const char* DEFAULT_NAME = "Mandelbrot set";
 
 #define KEY_ESC		9
@@ -36,10 +34,10 @@ void runner::init_values()
 		.iterations = DEFAULT_ITERS,
 		.width = wdt,
 		.height = hgt,
-		.left = -2.5,
-		.right = 1.0,
-		.top = 1.0,
-		.bottom = -1.0,
+		.left = -2.6,
+		.right = 1.2,
+		.top = 1.2,
+		.bottom = -1.2,
 	};
 
 	_colors = new color_vec {
@@ -66,7 +64,7 @@ void runner::init_values()
 
 	_num_colors = _colors->size();
 	_max_color = _num_colors - 1;
-	_colors_step = _md.iterations / _max_color;
+	_colors_step = _md.iterations / _num_colors;
 
 	_xstep = _g->get_width() / 10;
 	_ystep = _g->get_height() / 10;
@@ -116,7 +114,11 @@ runner::~runner()
 
 graphics_base::color_idx runner::convert_to_color(uint32_t v) const
 {
-	return _colors->at((v / _colors_step) % _max_color);
+	uint32_t c = std::min((v / _colors_step), _max_color);
+	DBG(STR("val:", 3) << DEC(v, 3) << STR(", step:", 2) << DEC(_colors_step, 3)
+		<< STR(", max:", 2) << DEC(_max_color, 3)
+		<< STR(", final color:", 2) << DEC(c, 2));
+	return _colors->at(c);
 };
 
 void runner::create_set()
@@ -132,15 +134,13 @@ void runner::display_set() const
 	for (uint32_t y = 0; y < _plane.size(); y++) {
 		for (uint32_t x = 0; x < _plane[y].size(); x++) {
 			graphics_base::color_idx c = convert_to_color(_plane[y][x]);
-			DBG("pixel: [" << DEC(y, 1) << "][" << DEC(x, 1)
+			DBG("pixel: p[" << DEC(y, 1) << "][" << DEC(x, 1)
 				<< "] = " << _g->get_color_name(c));
-			graphics_base::point pt = {x, y + 4 / 3};
+			graphics_base::point pt = {x, y};
 			_g->put_pixel(pt, c);
 		}
 	}
 	DBG("display finished");
-
-	_g->flush();
 };
 
 void runner::draw()
@@ -149,23 +149,28 @@ void runner::draw()
 		_g->show_snapshot();
 	}
 	else {
+#if 1
 		create_set();
 		_g->take_snapshot();
 		display_set();
 		_g->show_snapshot();
+#else
+		_g->demo();
+		_g->take_snapshot();
+#endif
 	}
 	_g->flush();
 
-	uint32_t ofstx = ((uint32_t)(((double)_md.width / (_md.right - _md.left)) / 2.0)) * 5;
-	uint32_t ofsty = ((uint32_t)((double)_md.height / (_md.top - _md.bottom)));
+	uint32_t ofstx = (uint32_t)_m->get_x_center();
+	uint32_t ofsty = (uint32_t)_m->get_y_center();
 
-	graphics_base::point p, q;
+	graphics_base::point p, q, r, s;
 	p = {ofstx, 0};
 	q = {ofstx, _md.height};
+	r = {0, ofsty};
+	s = {_md.width, ofsty};
 	_g->draw_line(p, q, graphics_base::bright_red);
-	p = {0, ofsty};
-	q = {_md.width, ofsty};
-	_g->draw_line(p, q, graphics_base::bright_red);
+	_g->draw_line(r, s, graphics_base::bright_red);
 	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
 	_g->flush();
 };
@@ -260,9 +265,6 @@ void runner::run()
 		if (get_event(event)) {
 			_is_running = handle_event(event);
 		}
-		// else {
-		// 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		// }
 	}
 };
 

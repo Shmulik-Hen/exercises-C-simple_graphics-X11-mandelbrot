@@ -128,7 +128,7 @@ void graphics::init_graphics()
 		throw;
 	}
 
-	_window = XCreateSimpleWindow(_display, _root, 0, 0, _width, _height, _brw, _brc, _bgc);
+	_window = XCreateSimpleWindow(_display, _root, 0, 0, _width, _height, 1, white, black);
 	if (!_window) {
 		throw std::runtime_error("Unable to create window");
 	}
@@ -168,6 +168,8 @@ void graphics::init_graphics()
 	XGetGeometry(_display, _window, &root,
 				 &_geo_x, &_geo_y, &_geo_w,
 				 &_geo_h, &_geo_b, &_geo_d);
+	INFO("x " << _geo_x << ", y " << _geo_y << ", width " << _geo_w << ", height " << _geo_h
+		<< ", thick " << _geo_b << ", depth " << _geo_d);
 };
 
 graphics::graphics() :

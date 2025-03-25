@@ -4,7 +4,7 @@
 
 namespace mandelbrot_ns {
 
-const uint32_t DEF_ITERS  = 200;
+const uint32_t DEF_ITERS  = 25;
 const uint32_t DEF_WIDTH  = 400;
 const uint32_t DEF_HEIGHT = 300;
 const double DEF_LEFT	= -2.5;
@@ -42,34 +42,48 @@ mandelbrot::mandelbrot(mand_data &d)
 	if (d.height)
 		_data.height = d.height;
 
-	// if (d.left)
-	// 	_data.left = d.left;
+	if (d.left)
+		_data.left = d.left;
 
-	// if (d.right)
-	// 	_data.right = d.right;
+	if (d.right)
+		_data.right = d.right;
 
-	// if (d.top)
-	// 	_data.top = d.top;
+	if (d.top)
+		_data.top = d.top;
 
-	// if (d.bottom)
-	// 	_data.bottom = d.bottom;
+	if (d.bottom)
+		_data.bottom = d.bottom;
 
 	if (d.limit)
 		_data.limit = d.limit;
 
-	_xstep = (_data.right - _data.left) / (double)_data.width;
-	_ystep = (_data.top - _data.bottom) / (double)_data.height;
+	_xrange = _data.right - _data.left;
+	_yrange = _data.top - _data.bottom;
+
+	if (_xrange <= 0.0 || _yrange <= 0.0 || _data.iterations < 1
+		|| _data.width < 1 || _data.height < 1 || _data.limit <= 0.0) {
+		throw std::runtime_error("illegal values");
+	}
+
+	_xcenter = (double)_data.width / _xrange / 2.0 * 5.0;
+	_ycenter = (double)_data.height / 2.0;
+	_xstep = _xrange / (double)_data.width;
+	_ystep = _yrange / (double)_data.height;
 
 	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
-	INFO(STR("width:", 12)  << DEC(_data.width, 3));
-	INFO(STR("height:", 12)  << DEC(_data.height, 3));
-	INFO(STR("left:", 12)  << FLT(_data.left, 6));
-	INFO(STR("right:", 12)  << FLT(_data.right, 6));
-	INFO(STR("top:", 12)  << FLT(_data.top, 6));
-	INFO(STR("bottom:", 12)  << FLT(_data.bottom, 6));
-	INFO(STR("limit:", 12)  << FLT(_data.limit, 6));
-	INFO(STR("xstep:", 12)  << FLT(_xstep, 6));
-	INFO(STR("ystep:", 12)  << FLT(_ystep, 6));
+	INFO(STR("width:", 12) << DEC(_data.width, 3));
+	INFO(STR("height:", 12) << DEC(_data.height, 3));
+	INFO(STR("left:", 12) << FLT(_data.left, 6));
+	INFO(STR("right:", 12) << FLT(_data.right, 6));
+	INFO(STR("top:", 12) << FLT(_data.top, 6));
+	INFO(STR("bottom:", 12) << FLT(_data.bottom, 6));
+	INFO(STR("limit:", 12) << FLT(_data.limit, 6));
+	INFO(STR("x range:", 12) << FLT(_xrange, 6));
+	INFO(STR("y range:", 12) << FLT(_yrange, 6));
+	INFO(STR("x center:", 12) << FLT(_xcenter, 6));
+	INFO(STR("y center:", 12) << FLT(_ycenter, 6));
+	INFO(STR("x step:", 12) << FLT(_xstep, 6));
+	INFO(STR("y step:", 12) << FLT(_ystep, 6));
 };
 
 uint32_t mandelbrot::is_in_set(point& c0) const

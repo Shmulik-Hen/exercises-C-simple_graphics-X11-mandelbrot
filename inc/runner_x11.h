@@ -28,9 +28,9 @@ private:
 	mandelbrot::plane_t _plane;
 	uint32_t _xstep {0};
 	uint32_t _ystep {0};
-	int _num_colors {0};
-	int _max_color{0};
-	int _colors_step{0};
+	uint32_t _num_colors {0};
+	uint32_t _max_color{0};
+	uint32_t _colors_step{0};
 
 	void init_values();
 	graphics_base::color_idx convert_to_color(uint32_t) const;
