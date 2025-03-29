@@ -65,10 +65,22 @@ mandelbrot::mandelbrot(mand_data &d)
 		throw std::runtime_error("illegal values");
 	}
 
-	_xcenter = (double)_data.width / _xrange / 2.0 * 5.0;
-	_ycenter = (double)_data.height / 2.0;
 	_xstep = _xrange / (double)_data.width;
 	_ystep = _yrange / (double)_data.height;
+
+	_xcenter=0;
+	while (_xcenter<(uint32_t)_data.width) {
+		if ((_data.left + _xcenter * _xstep) >= 0.0)
+			break;
+		_xcenter++;
+	}
+
+	_ycenter=0;
+	while (_ycenter<(uint32_t)_data.height) {
+		if ((_data.bottom + _ycenter * _ystep) >= 0.0)
+			break;
+		_ycenter++;
+	}
 
 	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
 	INFO(STR("width:", 12) << DEC(_data.width, 3));
@@ -86,13 +98,13 @@ mandelbrot::mandelbrot(mand_data &d)
 	INFO(STR("y step:", 12) << FLT(_ystep, 6));
 };
 
-uint32_t mandelbrot::is_in_set(point& c0) const
+uint32_t mandelbrot::is_in_set(point& z0) const
 {
 	point z{0.0, 0.0};
 	uint32_t it = 0;
 
 	while (it < _data.iterations) {
-		z = z * z + c0;
+		z = z * z + z0;
 		if (std::abs(z) > _data.limit)
 			break;
 		it++;

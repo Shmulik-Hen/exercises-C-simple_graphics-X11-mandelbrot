@@ -28,8 +28,8 @@ public:
 	mandelbrot(mand_data&);
 	~mandelbrot(){};
 	void compute(plane_t&);
-	inline const double get_x_center() const { return _xcenter; };
-	inline const double get_y_center() const { return _ycenter; };
+	inline const uint32_t get_x_center() const { return _xcenter; };
+	inline const uint32_t get_y_center() const { return _ycenter; };
 
       private:
 	typedef std::complex<double> point;
@@ -39,8 +39,8 @@ public:
 	double _ystep;
 	double _xrange;
 	double _yrange;
-	double _xcenter;
-	double _ycenter;
+	uint32_t _xcenter;
+	uint32_t _ycenter;
 
 	uint32_t is_in_set(point&) const;
 };
