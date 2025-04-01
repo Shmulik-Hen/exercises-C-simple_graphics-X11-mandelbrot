@@ -60,6 +60,15 @@ mandelbrot::mandelbrot(mand_data &d)
 	_xrange = _data.right - _data.left;
 	_yrange = _data.top - _data.bottom;
 
+	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
+	INFO(STR("width:", 12) << DEC(_data.width, 3));
+	INFO(STR("height:", 12) << DEC(_data.height, 3));
+	INFO(STR("left:", 12) << DBL(_data.left, 6));
+	INFO(STR("right:", 12) << DBL(_data.right, 6));
+	INFO(STR("top:", 12) << DBL(_data.top, 6));
+	INFO(STR("bottom:", 12) << DBL(_data.bottom, 6));
+	INFO(STR("limit:", 12) << DBL(_data.limit, 6));
+
 	if (_xrange <= 0.0 || _yrange <= 0.0 || _data.iterations < 1
 		|| _data.width < 1 || _data.height < 1 || _data.limit <= 0.0) {
 		throw std::runtime_error("illegal values");
@@ -82,20 +91,12 @@ mandelbrot::mandelbrot(mand_data &d)
 		_ycenter++;
 	}
 
-	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
-	INFO(STR("width:", 12) << DEC(_data.width, 3));
-	INFO(STR("height:", 12) << DEC(_data.height, 3));
-	INFO(STR("left:", 12) << FLT(_data.left, 6));
-	INFO(STR("right:", 12) << FLT(_data.right, 6));
-	INFO(STR("top:", 12) << FLT(_data.top, 6));
-	INFO(STR("bottom:", 12) << FLT(_data.bottom, 6));
-	INFO(STR("limit:", 12) << FLT(_data.limit, 6));
-	INFO(STR("x range:", 12) << FLT(_xrange, 6));
-	INFO(STR("y range:", 12) << FLT(_yrange, 6));
-	INFO(STR("x center:", 12) << FLT(_xcenter, 6));
-	INFO(STR("y center:", 12) << FLT(_ycenter, 6));
-	INFO(STR("x step:", 12) << FLT(_xstep, 6));
-	INFO(STR("y step:", 12) << FLT(_ystep, 6));
+	INFO(STR("x range:", 12) << DBL(_xrange, 6));
+	INFO(STR("y range:", 12) << DBL(_yrange, 6));
+	INFO(STR("x center:", 12) << DBL(_xcenter, 6));
+	INFO(STR("y center:", 12) << DBL(_ycenter, 6));
+	INFO(STR("x step:", 12) << DBL(_xstep, 6));
+	INFO(STR("y step:", 12) << DBL(_ystep, 6));
 };
 
 uint32_t mandelbrot::is_in_set(point& z0) const
@@ -123,9 +124,16 @@ void mandelbrot::compute(plane_t& p)
 			point pt = {x_pos, y_pos};
 			p[y][x] = is_in_set(pt);
 			DBG("iter: p[" << DEC(y, 1) << "][" << DEC(x, 1) << "] = " << DEC(p[y][x], 4)
-				<< SEP << FLT(y_pos, 6) << SEP << FLT(x_pos, 6));
+				<< SEP << DBL(y_pos, 6) << SEP << DBL(x_pos, 6));
 		}
 	}
+};
+
+int mandelbrot::translate_position(mand_pos& p) const
+{
+	p.dx = _data.left + p.ix * _xstep;
+	p.dy = _data.top - p.iy * _ystep;
+	return 0;
 };
 
 } // namespace mandelbrot_ns

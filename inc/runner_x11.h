@@ -2,6 +2,8 @@
 #define __RUNNER_X11_H__
 
 #include <vector>
+#include <tuple>
+#include <stack>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <graphics_x11.h>
@@ -17,28 +19,37 @@ class runner
 {
 private:
 	typedef std::vector<graphics_base::color_idx> color_vec;
+	typedef std::tuple<uint32_t, mandelbrot::mand_data> s_entry;
+	typedef std::stack<s_entry> mand_stack;
 
 	graphics* _g {NULL};
-	graphics_base::point _tl;
-	graphics_base::size _sz;
 	mandelbrot* _m {NULL};
 	color_vec* _colors {NULL};
+	mand_stack* _mdstk {NULL};
+	graphics_base::point _tl;
+	graphics_base::point _br;
+	graphics_base::size _sz;
 	mandelbrot::mand_data _md;
-	bool _is_running{false};
 	mandelbrot::plane_t _plane;
+	uint32_t _initial_xstep {0};
+	uint32_t _initial_ystep {0};
+	uint32_t _small_xstep {5};
+	uint32_t _small_ystep {5};
 	uint32_t _xstep {0};
 	uint32_t _ystep {0};
 	uint32_t _num_colors {0};
 	uint32_t _max_color{0};
 	uint32_t _colors_step{0};
+	uint32_t _seq_num {0};
+	bool _is_running {false};
 
 	void init_values();
-	graphics_base::color_idx convert_to_color(uint32_t) const;
 	void create_set();
 	void display_set() const;
 	void draw();
 	bool get_event(XEvent&);
 	bool handle_event(XEvent&);
+	graphics_base::color_idx convert_to_color(uint32_t) const;
 
 public:
 	runner();

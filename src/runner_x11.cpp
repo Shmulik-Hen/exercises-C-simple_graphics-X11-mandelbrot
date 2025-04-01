@@ -8,17 +8,19 @@
 
 namespace runner_ns_x11 {
 
-const int DEFAULT_WIDTH  = 1024;
-const int DEFAULT_HEIGHT = DEFAULT_WIDTH * 9 / 16;
-const int DEFAULT_ITERS  = 30;
+const int DEFAULT_WIDTH  = 1280;
+const int DEFAULT_HEIGHT = DEFAULT_WIDTH * 10 / 16;
+const int DEFAULT_ITERS  = 45;
 const char* DEFAULT_NAME = "Mandelbrot set";
 
-#define KEY_ESC		9
-#define KEY_SPACE	65
-#define KEY_UP		111
-#define KEY_RIGHT	114
-#define KEY_DOWN	116
-#define KEY_LEFT	113
+#define KEY_ESC			9
+#define KEY_BACKSPACE	22
+#define KEY_ENTER		36
+#define KEY_SPACE		65
+#define KEY_UP			111
+#define KEY_RIGHT		114
+#define KEY_DOWN		116
+#define KEY_LEFT		113
 
 void runner::init_values()
 {
@@ -66,24 +68,29 @@ void runner::init_values()
 	_max_color = _num_colors - 1;
 	_colors_step = _md.iterations / _num_colors;
 
-	_xstep = _g->get_width() / 10;
-	_ystep = _g->get_height() / 10;
+	_initial_xstep = _g->get_width() / 10;
+	_initial_ystep = _g->get_height() / 10;
+	_xstep = _initial_xstep;
+	_ystep = _initial_ystep;
 	_sz = {_xstep, _ystep};
+	_tl = {0, 0};
+	_br = {_tl.x + _sz.w, _tl.y + _sz.h};
+
 	double aspect_ratio = ((double(hgt) / (double)wdt));
 
 	INFO(ENDL
 		<< STR("width", 13) << DEC(wdt, 4) << ENDL
 		<< STR("height", 13) << DEC(hgt, 4) << ENDL
-		<< STR("aspect ratio", 13) << FLT(aspect_ratio, 3) << ENDL
+		<< STR("aspect ratio", 13) << DBL(aspect_ratio, 3) << ENDL
 		<< STR("num colors", 13) << DEC(_num_colors, 2) << ENDL
 		<< STR("max color", 13) << DEC(_max_color, 2) << ENDL
 		<< STR("color step", 13) << DEC(_max_color, 2) << ENDL
 		<< STR("xstep", 13) << DEC(_xstep, 2) << ENDL
-		<< STR("ystep", 13) << DEC(_ystep, 2) << ENDL);
+		<< STR("ystep", 13) << DEC(_ystep, 2) << ENDL
+		<< STR("seq_num", 13) << DEC(_seq_num, 2) << ENDL);
 };
 
-runner::runner() :
-	_is_running{true}
+runner::runner()
 {
 	_g = new graphics(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_NAME);
 	if (!_g) {
@@ -98,12 +105,22 @@ runner::runner() :
 	if (!_m) {
 		throw std::runtime_error("failed to create the mandelbrot set");
 	}
+
+	_mdstk = new mand_stack();
+	if (!_mdstk) {
+		throw std::runtime_error("failed to create the mandelbrot stack");
+	}
+
+	_is_running = true;
 };
 
 runner::~runner()
 {
 	if (_colors)
 		delete _colors;
+
+	if (_mdstk)
+		delete _mdstk;
 
 	if (_m)
 		delete _m;
@@ -123,14 +140,11 @@ graphics_base::color_idx runner::convert_to_color(uint32_t v) const
 
 void runner::create_set()
 {
-	DBG("compute started");
 	_m->compute(_plane);
-	DBG("compute finished");
 };
 
 void runner::display_set() const
 {
-	DBG("display started");
 	for (uint32_t y = 0; y < _plane.size(); y++) {
 		for (uint32_t x = 0; x < _plane[y].size(); x++) {
 			graphics_base::color_idx c = convert_to_color(_plane[y][x]);
@@ -140,7 +154,6 @@ void runner::display_set() const
 			_g->put_pixel(pt, c);
 		}
 	}
-	DBG("display finished");
 };
 
 void runner::draw()
@@ -161,16 +174,19 @@ void runner::draw()
 	}
 	_g->flush();
 
-	uint32_t ofstx = (uint32_t)_m->get_x_center();
-	uint32_t ofsty = (uint32_t)_m->get_y_center();
+	if (_seq_num == 0) {
+		uint32_t ofstx = (uint32_t)_m->get_x_center();
+		uint32_t ofsty = (uint32_t)_m->get_y_center();
 
-	graphics_base::point p, q, r, s;
-	p = {ofstx, 0};
-	q = {ofstx, _md.height};
-	r = {0, ofsty};
-	s = {_md.width, ofsty};
-	_g->draw_line(p, q, graphics_base::bright_red);
-	_g->draw_line(r, s, graphics_base::bright_red);
+		graphics_base::point p, q, r, s;
+		p = {ofstx, 0};
+		q = {ofstx, _md.height};
+		r = {0, ofsty};
+		s = {_md.width, ofsty};
+		_g->draw_line(p, q, graphics_base::bright_red);
+		_g->draw_line(r, s, graphics_base::bright_red);
+	}
+
 	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
 	_g->flush();
 };
@@ -184,6 +200,8 @@ bool runner::handle_event(XEvent& event)
 {
 	bool ret = true, st1, st2;
 	graphics_base::point tl, br;
+	mandelbrot::mand_pos pos_tl, pos_br;
+	s_entry s_ent;
 
 	switch (event.type) {
 	case Expose:
@@ -194,11 +212,14 @@ bool runner::handle_event(XEvent& event)
 		break;
 	case KeyPress:
 		DBG("Got key press event");
-
+		DBG("keycode: " << DEC(event.xkey.keycode, 3));
 		switch (event.xkey.keycode) {
 		case KEY_SPACE:
 			DBG("Got space key");
-			_g->refresh();
+			_xstep = (_xstep == _initial_xstep) ? _small_xstep : _initial_xstep;
+			_ystep = (_ystep == _initial_ystep) ? _small_ystep : _initial_ystep;
+			DBG(STR("xstep:", 12) << DEC(_xstep, 2) << SEP
+				 << STR("ystep:", 12) << DEC(_ystep, 2) << ENDL);
 			break;
 		case KEY_LEFT:
 			tl = {_tl.x-_xstep, _tl.y};
@@ -207,6 +228,7 @@ bool runner::handle_event(XEvent& event)
 			st2 = _g->is_in_bounds(br) == graphics_base::BOUNDS_OK;
 			if (st1 && st2) {
 				_tl = {tl.x, tl.y};
+				_br = {br.x, br.y};
 				_g->refresh();
 			}
 			break;
@@ -217,6 +239,7 @@ bool runner::handle_event(XEvent& event)
 			st2 = _g->is_in_bounds(br) == graphics_base::BOUNDS_OK;
 			if (st1 && st2) {
 				_tl = {tl.x, tl.y};
+				_br = {br.x, br.y};
 				_g->refresh();
 			}
 			break;
@@ -227,6 +250,7 @@ bool runner::handle_event(XEvent& event)
 			st2 = _g->is_in_bounds(br) == graphics_base::BOUNDS_OK;
 			if (st1 && st2) {
 				_tl = {tl.x, tl.y};
+				_br = {br.x, br.y};
 				_g->refresh();
 			}
 			break;
@@ -237,12 +261,70 @@ bool runner::handle_event(XEvent& event)
 			st2 = _g->is_in_bounds(br) == graphics_base::BOUNDS_OK;
 			if (st1 && st2) {
 				_tl = {tl.x, tl.y};
+				_br = {br.x, br.y};
 				_g->refresh();
 			}
 			break;
 		case KEY_ESC:
 			DBG("Got escape key");
 			ret = false;
+		case KEY_ENTER:
+			DBG("Got enter key");
+			s_ent = {_seq_num++, _md};
+			_mdstk->push(s_ent);
+			DBG("seq_num: " << DEC(_seq_num, 3));
+			pos_tl.ix = _tl.x;
+			pos_tl.iy = _tl.y;
+			pos_br.ix = _br.x;
+			pos_br.iy = _br.y;
+			_m->translate_position(pos_tl);
+			_m->translate_position(pos_br);
+			DBG(ENDL
+				<< STR("pos_tl:", 3) << DEC(pos_tl.ix, 3) << SEP << DEC(pos_tl.iy, 3)
+				<< SEP << DBL(pos_tl.dx, 3) << SEP << DBL(pos_tl.dy, 3) << ENDL
+				<< STR("pos_br:", 3) << DEC(pos_br.ix, 3) << SEP << DEC(pos_br.iy, 3)
+				<< SEP << DBL(pos_br.dx, 3) << SEP << DBL(pos_br.dy, 3) << ENDL);
+			_md.left = pos_tl.dx;
+			_md.top = pos_tl.dy;
+			_md.right = pos_br.dx;
+			_md.bottom = pos_br.dy;
+			_md.iterations = _md.iterations * 3 / 2;
+			_md.width = _g->get_width();
+			_md.height = _g->get_height();
+			_md.limit = 2.0;
+			if (_m) {
+				delete _m;
+				_m = NULL;
+			}
+
+			_m = new mandelbrot(_md);
+			if (!_m) {
+				throw std::runtime_error("failed to create new mandelbrot set");
+			}
+			_g->drop_snapshot();
+			_g->refresh();
+			break;
+		case KEY_BACKSPACE:
+			DBG("Got backspace key");
+			if (!_mdstk->empty()) {
+				s_ent = _mdstk->top();
+				_mdstk->pop();
+				_seq_num = std::get<0>(s_ent);
+				DBG("seq_num: " << DEC(_seq_num, 3));
+				_md = std::get<1>(s_ent);
+				if (_m) {
+					delete _m;
+					_m = NULL;
+				}
+
+				_m = new mandelbrot(_md);
+				if (!_m) {
+					throw std::runtime_error("failed to create new mandelbrot set");
+				}
+				_g->drop_snapshot();
+				_g->refresh();
+			}
+			break;
 		}
 		break;
 	case ButtonPress:

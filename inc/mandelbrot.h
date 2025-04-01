@@ -21,6 +21,13 @@ public:
 		double limit {0};
 	};
 
+	struct mand_pos {
+		uint32_t ix {0};
+		uint32_t iy {0};
+		double dx {0};
+		double dy {0};
+	};
+
 	typedef std::vector<uint32_t> row_t;
 	typedef std::vector<row_t> plane_t;
 
@@ -28,10 +35,11 @@ public:
 	mandelbrot(mand_data&);
 	~mandelbrot(){};
 	void compute(plane_t&);
+	int translate_position(mand_pos&) const;
 	inline const uint32_t get_x_center() const { return _xcenter; };
 	inline const uint32_t get_y_center() const { return _ycenter; };
 
-      private:
+private:
 	typedef std::complex<double> point;
 
 	mand_data _data;

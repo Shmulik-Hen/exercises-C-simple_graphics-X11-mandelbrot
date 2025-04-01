@@ -16,7 +16,7 @@ const std::string SEP		= ", ";
 #define FUNC	 STR(__PRETTY_FUNCTION__, 1) << ": "
 #define HEX(n,w) HEX_PFX << std::hex << std::setw((w)) << std::setfill('0') << std::right << (n)
 #define DEC(n,w) std::dec << std::setw((w)) << std::setfill(' ') << std::right << (n)
-#define FLT(n,p) std::setprecision(p) << std::fixed << (n)
+#define DBL(n,p) std::setprecision(p) << std::fixed << (n)
 #define STR(s,w) std::setw((w)) << std::setfill(' ') << std::left << (s)
 #define ERR(s)	 std::cerr << STR(ERR_PFX, 1)  << s << ENDL
 #define WARN(s)	 std::cerr << STR(WARN_PFX, 1) << s << ENDL
