@@ -14,8 +14,12 @@ int main()
 		r.run();
 	}
 	catch (const std::exception& e) {
-		ERR("Exception: ") << e.what();
+		ERR("main: exception: ") << e.what();
 		return -1;
+	}
+	catch (...) {
+		ERR("main: unknown exception");
+		throw std::runtime_error("runner: unknown exception");
 	}
 
 	return 0;

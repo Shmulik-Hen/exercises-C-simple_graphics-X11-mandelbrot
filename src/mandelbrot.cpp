@@ -60,18 +60,19 @@ mandelbrot::mandelbrot(mand_data &d)
 	_xrange = _data.right - _data.left;
 	_yrange = _data.top - _data.bottom;
 
-	INFO(STR("iterations: ", 12) << DEC(_data.iterations, 3));
-	INFO(STR("width:", 12) << DEC(_data.width, 3));
-	INFO(STR("height:", 12) << DEC(_data.height, 3));
-	INFO(STR("left:", 12) << DBL(_data.left, 6));
-	INFO(STR("right:", 12) << DBL(_data.right, 6));
-	INFO(STR("top:", 12) << DBL(_data.top, 6));
-	INFO(STR("bottom:", 12) << DBL(_data.bottom, 6));
-	INFO(STR("limit:", 12) << DBL(_data.limit, 6));
+	DBG("mandelbrot:" << ENDL
+		<< STR("  iterations:", 14) << DEC(_data.iterations, 4) << ENDL
+		<< STR("  width:", 14) << DEC(_data.width, 4) << ENDL
+		<< STR("  height:", 14) << DEC(_data.height, 4) << ENDL
+		<< STR("  left:", 14) << DBL(_data.left, 6) << ENDL
+		<< STR("  right:", 14) << DBL(_data.right, 6) << ENDL
+		<< STR("  top:", 14) << DBL(_data.top, 6) << ENDL
+		<< STR("  bottom:", 14) << DBL(_data.bottom, 6) << ENDL
+		<< STR("  limit:", 14) << DBL(_data.limit, 6) << ENDL);
 
 	if (_xrange <= 0.0 || _yrange <= 0.0 || _data.iterations < 1
 		|| _data.width < 1 || _data.height < 1 || _data.limit <= 0.0) {
-		throw std::runtime_error("illegal values");
+		throw std::runtime_error("mandelbrot: illegal values");
 	}
 
 	_xstep = _xrange / (double)_data.width;
@@ -91,12 +92,11 @@ mandelbrot::mandelbrot(mand_data &d)
 		_ycenter++;
 	}
 
-	INFO(STR("x range:", 12) << DBL(_xrange, 6));
-	INFO(STR("y range:", 12) << DBL(_yrange, 6));
-	INFO(STR("x center:", 12) << DBL(_xcenter, 6));
-	INFO(STR("y center:", 12) << DBL(_ycenter, 6));
-	INFO(STR("x step:", 12) << DBL(_xstep, 6));
-	INFO(STR("y step:", 12) << DBL(_ystep, 6));
+	DBG("mandelbrot:" << ENDL
+		<< STR("  x range:", 14) << DBL(_xrange, 15) << ENDL
+		<< STR("  y range:", 14) << DBL(_yrange, 15) << ENDL
+		<< STR("  x step:", 14) << DBL(_xstep, 18) << ENDL
+		<< STR("  y step:", 14) << DBL(_ystep, 18) << ENDL);
 };
 
 uint32_t mandelbrot::is_in_set(point& z0) const

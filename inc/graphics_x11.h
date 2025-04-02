@@ -83,7 +83,6 @@ public:
 
 	inline const bool snapshot_exists() const { return (_ximage != NULL); };
 	const bool wait_event(XEvent*) const;
-	const void flush() const;
 	const bool is_bright_color(color_idx) const;
 	int put_pixel(point, color_idx) const;
 	int take_snapshot();

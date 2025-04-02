@@ -8,9 +8,20 @@
 
 namespace runner_ns_x11 {
 
-const int DEFAULT_WIDTH  = 1280;
-const int DEFAULT_HEIGHT = DEFAULT_WIDTH * 10 / 16;
-const int DEFAULT_ITERS  = 45;
+const int DEFAULT_WIDTH  = 1024;
+const int DEFAULT_HEIGHT = 640; // 16:10
+const uint32_t DEFAULT_ITERS = 200;
+const uint32_t MAX_ITERS = 600;
+const uint32_t BIG_STEP = 50;
+const uint32_t SMALL_STEP = 5;
+const double DEF_ASPECT_RATIO = (double)DEFAULT_HEIGHT / (double)DEFAULT_WIDTH;
+const double ITERS_FACTOR = 1.2;
+const double DEFAULT_LEFT = -2.6;
+const double DEFAULT_RIGHT = 1.2;
+const double DEFAULT_TOP = 1.2;
+const double DEFAULT_BOTTOM = -1.2;
+const double DEFAULT_LIMIT = 1.8;
+const double BOX_RATIO = 30.0;
 const char* DEFAULT_NAME = "Mandelbrot set";
 
 #define KEY_ESC			9
@@ -24,22 +35,32 @@ const char* DEFAULT_NAME = "Mandelbrot set";
 
 void runner::init_values()
 {
-	uint32_t wdt = _g->get_width();
-	uint32_t hgt = _g->get_height();
+	// use actual values - in case resolution
+	// is bigger than the whole screen
+	_actual_width = _g->get_width();
+	_actual_height = _g->get_height();
 
-	_plane.resize(hgt);
-	for (uint32_t i = 0; i < hgt; i++) {
-		_plane[i].resize(wdt);
+	if (((double)_actual_height / (double)_actual_width) != _aspect_ratio) {
+		WARN("runner: aspect ratio mismatch: "
+			<< DBL(((double)_actual_height / (double)_actual_width), 6)
+			<< " != " << DBL(_aspect_ratio, 6));
+		_aspect_ratio = (double)_actual_height / (double)_actual_width;
+	}
+
+	_plane.resize(_actual_height);
+	for (uint32_t i = 0; i < _actual_height; i++) {
+		_plane[i].resize(_actual_width);
 	}
 
 	_md = {
 		.iterations = DEFAULT_ITERS,
-		.width = wdt,
-		.height = hgt,
-		.left = -2.6,
-		.right = 1.2,
-		.top = 1.2,
-		.bottom = -1.2,
+		.width = _actual_width,
+		.height = _actual_height,
+		.left = DEFAULT_LEFT,
+		.right = DEFAULT_RIGHT,
+		.top = DEFAULT_TOP,
+		.bottom = DEFAULT_BOTTOM,
+		.limit = DEFAULT_LIMIT,
 	};
 
 	_colors = new color_vec {
@@ -68,47 +89,77 @@ void runner::init_values()
 	_max_color = _num_colors - 1;
 	_colors_step = _md.iterations / _num_colors;
 
-	_initial_xstep = _g->get_width() / 10;
-	_initial_ystep = _g->get_height() / 10;
+	_initial_xstep = BIG_STEP;
+	_initial_ystep = (uint32_t)((double)BIG_STEP * _aspect_ratio);
+	_small_xstep = SMALL_STEP;
+	_small_ystep = (uint32_t)((double)SMALL_STEP * _aspect_ratio);
 	_xstep = _initial_xstep;
 	_ystep = _initial_ystep;
-	_sz = {_xstep, _ystep};
-	_tl = {0, 0};
+	_sz.w = (uint32_t)((double)_actual_width / BOX_RATIO);
+	_sz.h = (uint32_t)((double)_sz.w * _aspect_ratio);
+	_tl = {300, 300};
 	_br = {_tl.x + _sz.w, _tl.y + _sz.h};
 
-	double aspect_ratio = ((double(hgt) / (double)wdt));
-
-	INFO(ENDL
-		<< STR("width", 13) << DEC(wdt, 4) << ENDL
-		<< STR("height", 13) << DEC(hgt, 4) << ENDL
-		<< STR("aspect ratio", 13) << DBL(aspect_ratio, 3) << ENDL
-		<< STR("num colors", 13) << DEC(_num_colors, 2) << ENDL
-		<< STR("max color", 13) << DEC(_max_color, 2) << ENDL
-		<< STR("color step", 13) << DEC(_max_color, 2) << ENDL
-		<< STR("xstep", 13) << DEC(_xstep, 2) << ENDL
-		<< STR("ystep", 13) << DEC(_ystep, 2) << ENDL
-		<< STR("seq_num", 13) << DEC(_seq_num, 2) << ENDL);
+	DBG("runner:" << ENDL
+		<< STR("  initial values:", 1) << ENDL
+		<< STR("    ratio:", 17) << DBL(DEF_ASPECT_RATIO, 6) << ENDL
+		<< STR("    width:", 17) << DEC(_initial_width, 4) << ENDL
+		<< STR("    height:", 17) << DEC(_initial_height, 4) << ENDL
+		<< STR("  final values:", 1) << ENDL
+		<< STR("    ratio:", 17) << DBL(_aspect_ratio, 6) << ENDL
+		<< STR("    width:", 17) << DEC(_actual_width, 4) << ENDL
+		<< STR("    height:", 17) << DEC(_actual_height, 4) << ENDL
+		<< STR("    xstep:", 17) << DEC(_xstep, 4) << ENDL
+		<< STR("    ystep:", 17) << DEC(_ystep, 4) << ENDL
+		<< STR("    num colors:", 17) << DEC(_num_colors, 4) << ENDL
+		<< STR("    max color:", 17) << DEC(_max_color, 4) << ENDL
+		<< STR("    color step:", 17) << DEC(_colors_step, 4) << ENDL);
 };
 
-runner::runner()
+runner::runner() :
+	_aspect_ratio(DEF_ASPECT_RATIO),
+	_initial_width(DEFAULT_WIDTH),
+	_initial_height(DEFAULT_HEIGHT)
 {
-	_g = new graphics(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_NAME);
-	if (!_g) {
-		throw std::runtime_error("failed to create the graphic context");
+	DBG("runner: creating graphics context");
+	try {
+		_g = new graphics(_initial_width, _initial_height, DEFAULT_NAME);
+	}
+	catch (const std::exception& e) {
+		ERR("runner: failed to create the graphic context" << e.what());
+		throw;
+	}
+	catch (...) {
+		ERR("runner: unknown exception");
+		throw std::runtime_error("runner: unknown exception");
 	}
 
 	// this must be called after graphics initialization
 	// but before the mandelbrot initialization.
 	init_values();
 
-	_m = new mandelbrot(_md);
-	if (!_m) {
-		throw std::runtime_error("failed to create the mandelbrot set");
+	try {
+		_m = new mandelbrot(_md);
+	}
+	catch (const std::exception& e) {
+		ERR("runner: failed to create the mandelbrot set" << e.what());
+		throw;
+	}
+	catch (...) {
+		ERR("runner: unknown exception");
+		throw std::runtime_error("runner: unknown exception");
 	}
 
-	_mdstk = new mand_stack();
-	if (!_mdstk) {
-		throw std::runtime_error("failed to create the mandelbrot stack");
+	try {
+		_mdstk = new mand_stack();
+	}
+	catch (const std::exception& e) {
+		ERR("runner: failed to create the mandelbrot stack" << e.what());
+		throw;
+	}
+	catch (...) {
+		ERR("runner: unknown exception");
+		throw std::runtime_error("runner: unknown exception");
 	}
 
 	_is_running = true;
@@ -132,9 +183,10 @@ runner::~runner()
 graphics_base::color_idx runner::convert_to_color(uint32_t v) const
 {
 	uint32_t c = std::min((v / _colors_step), _max_color);
-	DBG(STR("val:", 3) << DEC(v, 3) << STR(", step:", 2) << DEC(_colors_step, 3)
-		<< STR(", max:", 2) << DEC(_max_color, 3)
-		<< STR(", final color:", 2) << DEC(c, 2));
+	DBG(STR("val: ", 1) << DEC(v, 3)
+		<< STR(", step:", 1) << DEC(_colors_step, 3)
+		<< STR(", max:", 1) << DEC(_max_color, 3)
+		<< STR(", final color:", 1) << DEC(c, 2));
 	return _colors->at(c);
 };
 
@@ -162,33 +214,35 @@ void runner::draw()
 		_g->show_snapshot();
 	}
 	else {
-#if 1
-		create_set();
-		_g->take_snapshot();
-		display_set();
-		_g->show_snapshot();
-#else
+#ifdef DEMO
 		_g->demo();
 		_g->take_snapshot();
+#else
+		// create the buffer
+		_g->take_snapshot();
+		create_set();
+		// override the buffer data
+		display_set();
+		// show the buffer
+		_g->show_snapshot();
 #endif
 	}
-	_g->flush();
 
 	if (_seq_num == 0) {
 		uint32_t ofstx = (uint32_t)_m->get_x_center();
 		uint32_t ofsty = (uint32_t)_m->get_y_center();
 
-		graphics_base::point p, q, r, s;
+		graphics_base::point p, q;
 		p = {ofstx, 0};
 		q = {ofstx, _md.height};
-		r = {0, ofsty};
-		s = {_md.width, ofsty};
 		_g->draw_line(p, q, graphics_base::bright_red);
-		_g->draw_line(r, s, graphics_base::bright_red);
+
+		p = {0, ofsty};
+		q = {_md.width, ofsty};
+		_g->draw_line(p, q, graphics_base::bright_red);
 	}
 
-	_g->draw_rect(_tl, _sz, graphics_base::bright_red, false);
-	_g->flush();
+	_g->draw_rect(_tl, _sz, graphics_base::white, false);
 };
 
 bool runner::get_event(XEvent& event)
@@ -222,6 +276,7 @@ bool runner::handle_event(XEvent& event)
 				 << STR("ystep:", 12) << DEC(_ystep, 2) << ENDL);
 			break;
 		case KEY_LEFT:
+			DBG("Got left arrow key");
 			tl = {_tl.x-_xstep, _tl.y};
 			br = {tl.x+_sz.w, tl.y+_sz.h};
 			st1 = _g->is_in_bounds(tl) == graphics_base::BOUNDS_OK;
@@ -233,6 +288,7 @@ bool runner::handle_event(XEvent& event)
 			}
 			break;
 		case KEY_RIGHT:
+			DBG("Got right arrow key");
 			tl = {_tl.x+_xstep, _tl.y};
 			br = {tl.x+_sz.w, tl.y+_sz.h};
 			st1 = _g->is_in_bounds(tl) == graphics_base::BOUNDS_OK;
@@ -244,6 +300,7 @@ bool runner::handle_event(XEvent& event)
 			}
 			break;
 		case KEY_UP:
+			DBG("Got up arrow key");
 			tl = {_tl.x, _tl.y-_ystep};
 			br = {tl.x+_sz.w, tl.y+_sz.h};
 			st1 = _g->is_in_bounds(tl) == graphics_base::BOUNDS_OK;
@@ -255,6 +312,7 @@ bool runner::handle_event(XEvent& event)
 			}
 			break;
 		case KEY_DOWN:
+			DBG("Got down arrow key");
 			tl = {_tl.x, _tl.y+_ystep};
 			br = {tl.x+_sz.w, tl.y+_sz.h};
 			st1 = _g->is_in_bounds(tl) == graphics_base::BOUNDS_OK;
@@ -268,62 +326,89 @@ bool runner::handle_event(XEvent& event)
 		case KEY_ESC:
 			DBG("Got escape key");
 			ret = false;
+			break;
 		case KEY_ENTER:
 			DBG("Got enter key");
 			s_ent = {_seq_num++, _md};
 			_mdstk->push(s_ent);
-			DBG("seq_num: " << DEC(_seq_num, 3));
 			pos_tl.ix = _tl.x;
 			pos_tl.iy = _tl.y;
 			pos_br.ix = _br.x;
 			pos_br.iy = _br.y;
 			_m->translate_position(pos_tl);
 			_m->translate_position(pos_br);
-			DBG(ENDL
-				<< STR("pos_tl:", 3) << DEC(pos_tl.ix, 3) << SEP << DEC(pos_tl.iy, 3)
-				<< SEP << DBL(pos_tl.dx, 3) << SEP << DBL(pos_tl.dy, 3) << ENDL
-				<< STR("pos_br:", 3) << DEC(pos_br.ix, 3) << SEP << DEC(pos_br.iy, 3)
-				<< SEP << DBL(pos_br.dx, 3) << SEP << DBL(pos_br.dy, 3) << ENDL);
+			DBG("runner:" << ENDL
+				<< STR("  pos_tl: ", 1) << DEC(pos_tl.ix, 3) << SEP << DEC(pos_tl.iy, 3)
+				<< SEP << DBL(pos_tl.dx, 6) << SEP << DBL(pos_tl.dy, 6) << ENDL
+				<< STR("  pos_br: ", 1) << DEC(pos_br.ix, 3) << SEP << DEC(pos_br.iy, 3)
+				<< SEP << DBL(pos_br.dx, 6) << SEP << DBL(pos_br.dy, 6) << ENDL);
+			_md.iterations = std::min((uint32_t)((double)_md.iterations * ITERS_FACTOR), MAX_ITERS);
+			// _md.iterations = DEFAULT_ITERS;
+			_md.width = _actual_width;
+			_md.height = _actual_height;
 			_md.left = pos_tl.dx;
-			_md.top = pos_tl.dy;
 			_md.right = pos_br.dx;
+			_md.top = pos_tl.dy;
 			_md.bottom = pos_br.dy;
-			_md.iterations = _md.iterations * 3 / 2;
-			_md.width = _g->get_width();
-			_md.height = _g->get_height();
-			_md.limit = 2.0;
-			if (_m) {
-				delete _m;
-				_m = NULL;
-			}
+			_md.limit = DEFAULT_LIMIT;
+			_xstep = _initial_xstep;
+			_ystep = _initial_ystep;
 
-			_m = new mandelbrot(_md);
-			if (!_m) {
-				throw std::runtime_error("failed to create new mandelbrot set");
-			}
-			_g->drop_snapshot();
-			_g->refresh();
-			break;
-		case KEY_BACKSPACE:
-			DBG("Got backspace key");
-			if (!_mdstk->empty()) {
-				s_ent = _mdstk->top();
-				_mdstk->pop();
-				_seq_num = std::get<0>(s_ent);
-				DBG("seq_num: " << DEC(_seq_num, 3));
-				_md = std::get<1>(s_ent);
+			try {
 				if (_m) {
 					delete _m;
 					_m = NULL;
 				}
 
 				_m = new mandelbrot(_md);
-				if (!_m) {
-					throw std::runtime_error("failed to create new mandelbrot set");
-				}
-				_g->drop_snapshot();
-				_g->refresh();
 			}
+			catch (const std::exception& e) {
+				ERR("runner: failed to create new mandelbrot set" << e.what());
+				throw;
+			}
+			catch (...) {
+				ERR("runner: unknown exception");
+				throw std::runtime_error("runner: unknown exception");
+			}
+
+			_g->drop_snapshot();
+			_g->refresh();
+			break;
+		case KEY_BACKSPACE:
+			DBG("Got backspace key");
+			if (_mdstk->empty())
+				break;
+
+			s_ent = _mdstk->top();
+			_mdstk->pop();
+			_seq_num = std::get<0>(s_ent);
+			_md = std::get<1>(s_ent);
+			_xstep = _initial_xstep;
+			_ystep = _initial_ystep;
+
+			try {
+				if (_m) {
+					delete _m;
+					_m = NULL;
+				}
+
+				_m = new mandelbrot(_md);
+			}
+			catch (const std::exception& e) {
+				ERR("runner: failed to create new mandelbrot set" << e.what());
+				throw;
+			}
+			catch (...) {
+				ERR("runner: unknown exception");
+				throw std::runtime_error("runner: unknown exception");
+			}
+
+			_g->drop_snapshot();
+			_g->refresh();
+			break;
+		default:
+			DBG("Got unsupported key");
+			DBG(STR("keycode:", 3) << DEC(event.xkey.keycode, 3));
 			break;
 		}
 		break;

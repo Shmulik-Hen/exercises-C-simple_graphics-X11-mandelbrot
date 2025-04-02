@@ -31,10 +31,15 @@ private:
 	graphics_base::size _sz;
 	mandelbrot::mand_data _md;
 	mandelbrot::plane_t _plane;
+	double _aspect_ratio {0.0};
+	uint32_t _initial_width {0};
+	uint32_t _initial_height {0};
+	uint32_t _actual_width {0};
+	uint32_t _actual_height {0};
 	uint32_t _initial_xstep {0};
 	uint32_t _initial_ystep {0};
-	uint32_t _small_xstep {5};
-	uint32_t _small_ystep {5};
+	uint32_t _small_xstep {0};
+	uint32_t _small_ystep {0};
 	uint32_t _xstep {0};
 	uint32_t _ystep {0};
 	uint32_t _num_colors {0};
