@@ -1,23 +1,20 @@
 #ifndef __GRAPHICS_BASE_H__
 #define __GRAPHICS_BASE_H__
 
-#include <string>
 #include <stdint.h>
+#include <string>
 
-namespace graphics_ns_base
-{
+namespace graphics_ns_base {
 
 typedef uint32_t color_val;
 
-class graphics_base
-{
-private:
+class graphics_base {
+      private:
 	virtual void init_graphics() = 0;
 
-public:
-	enum color_idx
-	{
-		__first_color__  = 0, // Dummy, not an qctual color
+      public:
+	enum color_idx {
+		__first_color__ = 0, // Dummy, not an qctual color
 
 		black = __first_color__,
 		white,
@@ -51,22 +48,19 @@ public:
 		__last_color__ // Dummy, not an qctual color
 	};
 
-	enum bounds_status
-	{
-		BOUNDS_OK   	= 0x00000000,
-		BOUNDS_X_OUT    = 0x00000001,
-		BOUNDS_Y_OUT    = 0x00000002,
-		BOUNDS_BOTH_OUT	= (BOUNDS_X_OUT | BOUNDS_Y_OUT)
+	enum bounds_status {
+		BOUNDS_OK = 0x00000000,
+		BOUNDS_X_OUT = 0x00000001,
+		BOUNDS_Y_OUT = 0x00000002,
+		BOUNDS_BOTH_OUT = (BOUNDS_X_OUT | BOUNDS_Y_OUT)
 	};
 
-	struct point
-	{
+	struct point {
 		uint32_t x = 0;
 		uint32_t y = 0;
 	};
 
-	struct size
-	{
+	struct size {
 		uint32_t w = 0;
 		uint32_t h = 0;
 	};

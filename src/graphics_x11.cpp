@@ -1,6 +1,6 @@
 #include <stdexcept>
-#include <utility>
 #include <string.h>
+#include <utility>
 // #define DEBUG_GRFX
 #include <common.h>
 #include <graphics_x11.h>
@@ -9,9 +9,9 @@ namespace graphics_ns_base {
 
 namespace graphics_ns_x11 {
 
-const uint32_t DEFAULT_WIDTH  = 400;
+const uint32_t DEFAULT_WIDTH = 400;
 const uint32_t DEFAULT_HEIGHT = 300;
-const char* DEFAULT_NAME = "Graphics_X11";
+const char *DEFAULT_NAME = "Graphics_X11";
 
 #define GMASK 0x00FFFFFF
 #define CMASK 0xFF
@@ -20,32 +20,13 @@ const char* DEFAULT_NAME = "Graphics_X11";
 #define B(x) ((x) & CMASK)
 #define RGB(r, g, b) ((R(r) + G(g) + B(b)) & GMASK)
 
-void graphics::init_colors()
-{
-	const char *tmp_col[get_num_colors()] =  {
-		"black",
-		"white",
-		"light grey",
-		"dim grey",
-		"red1",
-		"red4",
-		"red4",
-		"orange1",
-		"orange3",
-		"orange4",
-		"yellow1",
-		"yellow4",
-		"yellow4",
-		"green1",
-		"green4",
-		"green4",
-		"blue1",
-		"blue4",
-		"blue4",
-		"purple1",
-		"purple3",
-		"purple4"
-	};
+void graphics::init_colors() {
+	const char *tmp_col[get_num_colors()] = {
+	    "black",   "white",	  "light grey", "dim grey", "red1",
+	    "red4",    "red4",	  "orange1",	"orange3",  "orange4",
+	    "yellow1", "yellow4", "yellow4",	"green1",   "green4",
+	    "green4",  "blue1",	  "blue4",	"blue4",    "purple1",
+	    "purple3", "purple4"};
 
 	_colors = new color;
 	_colors->clear();
@@ -100,32 +81,29 @@ void graphics::init_colors()
 	}
 
 	if (errors || _colors->empty()) {
-		throw std::runtime_error("graphics: there were color initialization errors");
+		throw std::runtime_error(
+		    "graphics: there were color initialization errors");
 	}
 };
 
-void graphics::init_graphics()
-{
+void graphics::init_graphics() {
 	int rc;
 
-	DBG("graphics:" << ENDL
-		<< STR("  initial values:", 1) << ENDL
-		<< STR("    x:", 14) << DEC(0, 4) << ENDL
-		<< STR("    y:", 14) << DEC(0, 4) << ENDL
-		<< STR("    width:", 14) << DEC(_width, 4) << ENDL
-		<< STR("    height:", 14) << DEC(_height, 4) << ENDL
-		<< STR("    thick:", 14) << DEC(1, 4) << ENDL
-		<< STR("    depth:", 14) << DEC(24, 4) << ENDL);
+	DBG("graphics:" << ENDL << STR("  initial values:", 1) << ENDL
+			<< STR("    x:", 14) << DEC(0, 4) << ENDL
+			<< STR("    y:", 14) << DEC(0, 4) << ENDL
+			<< STR("    width:", 14) << DEC(_width, 4) << ENDL
+			<< STR("    height:", 14) << DEC(_height, 4) << ENDL
+			<< STR("    thick:", 14) << DEC(1, 4) << ENDL
+			<< STR("    depth:", 14) << DEC(24, 4) << ENDL);
 
 	try {
 		DBG("graphics: opening display");
 		_display = XOpenDisplay(NULL);
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception &e) {
 		ERR("graphics: Unable to open the display " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
@@ -141,36 +119,35 @@ void graphics::init_graphics()
 	try {
 		DBG("graphics: initializing colors");
 		init_colors();
-	}
-	catch (const std::runtime_error& e) {
+	} catch (const std::runtime_error &e) {
 		ERR("graphics: Unable to initialize base values " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 
 	try {
 		DBG("graphics: creating window");
-		_window = XCreateSimpleWindow(_display, _root, 0, 0, _width, _height, 1, white, black);
-	}
-	catch (const std::exception& e) {
+		_window = XCreateSimpleWindow(_display, _root, 0, 0, _width,
+					      _height, 1, white, black);
+	} catch (const std::exception &e) {
 		ERR("graphics: Unable to create window " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 
 	DBG("graphics: setting window properties");
-	rc = XSetStandardProperties(_display, _window, _name, NULL, None, NULL, 0, NULL);
+	rc = XSetStandardProperties(_display, _window, _name, NULL, None, NULL,
+				    0, NULL);
 	if (!rc) {
 		throw std::runtime_error("graphics: Unable to set properties");
 	}
 
-	_em = StructureNotifyMask | KeyPressMask | ButtonPressMask | ExposureMask;
+	_em =
+	    StructureNotifyMask | KeyPressMask | ButtonPressMask | ExposureMask;
 	DBG("graphics: selecting input events");
 	rc = XSelectInput(_display, _window, _em);
 	if (!rc) {
@@ -186,7 +163,8 @@ void graphics::init_graphics()
 	DBG("graphics: creating graphic context");
 	_gc = XCreateGC(_display, _window, 0, 0);
 	if (!_gc) {
-		throw std::runtime_error("graphics: Unable to create graphic context");
+		throw std::runtime_error(
+		    "graphics: Unable to create graphic context");
 	}
 
 	DBG("graphics: setting background and foreground colors");
@@ -206,97 +184,74 @@ void graphics::init_graphics()
 	Window root;
 
 	DBG("graphics: getting window geometry");
-	rc = XGetGeometry(_display, _window, &root,
-			&_geo_x, &_geo_y, &_geo_w,
-			&_geo_h, &_geo_b, &_geo_d);
+	rc = XGetGeometry(_display, _window, &root, &_geo_x, &_geo_y, &_geo_w,
+			  &_geo_h, &_geo_b, &_geo_d);
 	if (!rc) {
 		throw std::runtime_error("graphics: Unable to get geometry");
 	}
 
-	DBG("graphics:" << ENDL
-		<< STR("  actual values:", 1) << ENDL
-		<< STR("    x:", 14) << DEC(_geo_x, 4) << ENDL
-		<< STR("    y:", 14) << DEC(_geo_y, 4) << ENDL
-		<< STR("    width:", 14) << DEC(_geo_w, 4) << ENDL
-		<< STR("    height:", 14) << DEC(_geo_h, 4)  << ENDL
-		<< STR("    thick:", 14) << DEC(_geo_b, 4) << ENDL
-		<< STR("    depth:", 14)  << DEC(_geo_d, 4) << ENDL);
+	DBG("graphics:" << ENDL << STR("  actual values:", 1) << ENDL
+			<< STR("    x:", 14) << DEC(_geo_x, 4) << ENDL
+			<< STR("    y:", 14) << DEC(_geo_y, 4) << ENDL
+			<< STR("    width:", 14) << DEC(_geo_w, 4) << ENDL
+			<< STR("    height:", 14) << DEC(_geo_h, 4) << ENDL
+			<< STR("    thick:", 14) << DEC(_geo_b, 4) << ENDL
+			<< STR("    depth:", 14) << DEC(_geo_d, 4) << ENDL);
 };
 
-graphics::graphics() :
-	_width{DEFAULT_WIDTH},
-	_height{DEFAULT_HEIGHT},
-	_name{DEFAULT_NAME}
-{
+graphics::graphics()
+    : _width{DEFAULT_WIDTH}, _height{DEFAULT_HEIGHT}, _name{DEFAULT_NAME} {
 	try {
 		init_graphics();
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception &e) {
 		ERR("graphics: failed to initialize graphics " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 };
 
-graphics::graphics(const char* s) :
-	_width{DEFAULT_WIDTH},
-	_height{DEFAULT_HEIGHT},
-	_name{s}
-{
+graphics::graphics(const char *s)
+    : _width{DEFAULT_WIDTH}, _height{DEFAULT_HEIGHT}, _name{s} {
 	try {
 		init_graphics();
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception &e) {
 		ERR("graphics: failed to initialize graphics " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 };
 
-graphics::graphics(uint32_t w, uint32_t h) :
-	_width{w},
-	_height{h},
-	_name{DEFAULT_NAME}
-{
+graphics::graphics(uint32_t w, uint32_t h)
+    : _width{w}, _height{h}, _name{DEFAULT_NAME} {
 	try {
 		init_graphics();
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception &e) {
 		ERR("graphics: failed to initialize graphics " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 };
 
-graphics::graphics(uint32_t w, uint32_t h, const char *s) :
-	_width{w},
-	_height{h},
-	_name{s}
-{
+graphics::graphics(uint32_t w, uint32_t h, const char *s)
+    : _width{w}, _height{h}, _name{s} {
 	try {
 		init_graphics();
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception &e) {
 		ERR("graphics: failed to initialize graphics " << e.what());
 		throw;
-	}
-	catch (...) {
+	} catch (...) {
 		ERR("graphics: unknown exception");
 		throw std::runtime_error("graphics: unknown exception");
 	}
 };
 
-graphics::~graphics()
-{
+graphics::~graphics() {
 	if (_gc) {
 		XFreeGC(_display, _gc);
 	}
@@ -316,8 +271,7 @@ graphics::~graphics()
 	}
 };
 
-const graphics_base::bounds_status graphics::is_in_bounds(point p) const
-{
+const graphics_base::bounds_status graphics::is_in_bounds(point p) const {
 	uint32_t rc = BOUNDS_OK;
 
 	if (p.x < 0 || p.x > _geo_w)
@@ -329,29 +283,25 @@ const graphics_base::bounds_status graphics::is_in_bounds(point p) const
 	return (graphics_base::bounds_status)rc;
 };
 
-const bool graphics::is_valid_color(color_idx c) const
-{
+const bool graphics::is_valid_color(color_idx c) const {
 	return (c >= __first_color__ && c < __last_color__);
 };
 
-const color_val graphics::get_color_val(color_idx c) const
-{
+const color_val graphics::get_color_val(color_idx c) const {
 	return _colors->find(c)->second.val;
 };
 
-const std::string graphics::get_color_name(color_idx c) const
-{
+const std::string graphics::get_color_name(color_idx c) const {
 	return _colors->find(c)->second.name;
 };
 
-void graphics::draw_pixel(point p, color_idx c) const
-{
+void graphics::draw_pixel(point p, color_idx c) const {
 	if (is_in_bounds(p) != BOUNDS_OK) {
 		WARN("graphics: Out of bounds");
 		return;
 	}
 
-	if(!is_valid_color(c)) {
+	if (!is_valid_color(c)) {
 		WARN("graphics: invalid color");
 		return;
 	}
@@ -360,14 +310,13 @@ void graphics::draw_pixel(point p, color_idx c) const
 	XDrawPoint(_display, _window, _gc, p.x, p.y);
 };
 
-void graphics::draw_line(point tl, point br, color_idx c) const
-{
+void graphics::draw_line(point tl, point br, color_idx c) const {
 	if (is_in_bounds(tl) != BOUNDS_OK || is_in_bounds(br) != BOUNDS_OK) {
 		WARN("graphics: Out of bounds");
 		return;
 	}
 
-	if(!is_valid_color(c)) {
+	if (!is_valid_color(c)) {
 		WARN("graphics: invalid color");
 		return;
 	}
@@ -376,14 +325,14 @@ void graphics::draw_line(point tl, point br, color_idx c) const
 	XDrawLine(_display, _window, _gc, tl.x, tl.y, br.x, br.y);
 };
 
-void graphics::draw_rect(point tl, size sz, color_idx c, bool fill) const
-{
-	if (is_in_bounds(tl) != BOUNDS_OK || is_in_bounds({tl.x+sz.w, tl.y+sz.h}) != BOUNDS_OK) {
+void graphics::draw_rect(point tl, size sz, color_idx c, bool fill) const {
+	if (is_in_bounds(tl) != BOUNDS_OK ||
+	    is_in_bounds({tl.x + sz.w, tl.y + sz.h}) != BOUNDS_OK) {
 		WARN("graphics: Out of bounds");
 		return;
 	}
 
-	if(!is_valid_color(c)) {
+	if (!is_valid_color(c)) {
 		WARN("graphics: invalid color");
 		return;
 	}
@@ -391,40 +340,35 @@ void graphics::draw_rect(point tl, size sz, color_idx c, bool fill) const
 	XSetForeground(_display, _gc, get_color_val(c));
 	if (fill) {
 		XFillRectangle(_display, _window, _gc, tl.x, tl.y, sz.w, sz.h);
-	}
-	else {
+	} else {
 		XDrawRectangle(_display, _window, _gc, tl.x, tl.y, sz.w, sz.h);
 	}
 };
 
-void graphics::draw_text(point p, std::string s, color_idx c) const
-{
+void graphics::draw_text(point p, std::string s, color_idx c) const {
 	if (is_in_bounds(p) != BOUNDS_OK) {
 		WARN("graphics: Out of bounds");
 		return;
 	}
 
-	if(!is_valid_color(c)) {
+	if (!is_valid_color(c)) {
 		WARN("graphics: invalid color");
 		return;
 	}
 
-	XTextItem txt{(char*)s.c_str(), (int)s.length(), 1, None};
+	XTextItem txt{(char *)s.c_str(), (int)s.length(), 1, None};
 	XSetForeground(_display, _gc, get_color_val(c));
 	XDrawText(_display, _window, _gc, p.x, p.y, &txt, 1);
 };
 
-void graphics::refresh() const
-{
+void graphics::refresh() const {
 	XEvent ev;
 	Window root;
 	uint32_t border_width, depth;
 
-	XGetGeometry(_display, _window, &root,
-				 &ev.xexpose.x, &ev.xexpose.y,
-				 (unsigned int*)&ev.xexpose.width,
-				 (unsigned int*)&ev.xexpose.height,
-				 &border_width, &depth);
+	XGetGeometry(_display, _window, &root, &ev.xexpose.x, &ev.xexpose.y,
+		     (unsigned int *)&ev.xexpose.width,
+		     (unsigned int *)&ev.xexpose.height, &border_width, &depth);
 
 	ev.xexpose.type = Expose;
 	ev.xexpose.display = _display;
@@ -435,8 +379,7 @@ void graphics::refresh() const
 	XSendEvent(_display, _window, false, ExposureMask, &ev);
 };
 
-const bool graphics::wait_event(XEvent* e) const
-{
+const bool graphics::wait_event(XEvent *e) const {
 	XEvent tmp;
 
 	while (1) {
@@ -461,8 +404,7 @@ const bool graphics::wait_event(XEvent* e) const
 	return false;
 };
 
-const bool graphics::is_bright_color(color_idx c) const
-{
+const bool graphics::is_bright_color(color_idx c) const {
 	switch (c) {
 	case white:
 	case grey:
@@ -476,8 +418,7 @@ const bool graphics::is_bright_color(color_idx c) const
 	}
 };
 
-int graphics::put_pixel(point p, color_idx c) const
-{
+int graphics::put_pixel(point p, color_idx c) const {
 	if (!_ximage) {
 		return -1;
 	}
@@ -486,20 +427,20 @@ int graphics::put_pixel(point p, color_idx c) const
 		return -2;
 	}
 
-	if(!is_valid_color(c)) {
+	if (!is_valid_color(c)) {
 		return -3;
 	}
 
-	DBG(STR("pixel:", 10) << DEC(p.x, 4) << SEP
-		<< DEC(p.y, 4) << SEP << STR(get_color_name(c), 1));
+	DBG(STR("pixel:", 10) << DEC(p.x, 4) << SEP << DEC(p.y, 4) << SEP
+			      << STR(get_color_name(c), 1));
 	return _ximage->f.put_pixel(_ximage, p.x, p.y, get_color_val(c));
 };
 
-int graphics::take_snapshot()
-{
+int graphics::take_snapshot() {
 	XFlush(_display);
 
-	XImage *tmp_image = XGetImage(_display, _window, 0, 0, _geo_w, _geo_h, AllPlanes, ZPixmap);
+	XImage *tmp_image = XGetImage(_display, _window, 0, 0, _geo_w, _geo_h,
+				      AllPlanes, ZPixmap);
 	if (!tmp_image) {
 		return -1;
 	}
@@ -512,15 +453,13 @@ int graphics::take_snapshot()
 	return 0;
 };
 
-int graphics::drop_snapshot()
-{
+int graphics::drop_snapshot() {
 	XDestroyImage(_ximage);
 	_ximage = NULL;
 	return 0;
 };
 
-int graphics::show_snapshot() const
-{
+int graphics::show_snapshot() const {
 	if (!_ximage) {
 		return -1;
 	}
@@ -530,8 +469,7 @@ int graphics::show_snapshot() const
 	return 0;
 };
 
-void graphics::demo() const
-{
+void graphics::demo() const {
 	point tl, br, p;
 	size sz;
 	uint32_t x = 0, y = 0, gap = 50;
@@ -539,7 +477,8 @@ void graphics::demo() const
 	XFlush(_display);
 
 	// filled rects
-	for (color::const_iterator it = _colors->cbegin(); it != _colors->cend(); x+=gap, it++) {
+	for (color::const_iterator it = _colors->cbegin();
+	     it != _colors->cend(); x += gap, it++) {
 		std::string s = std::to_string(it->first);
 		color_idx c = white;
 
@@ -549,10 +488,9 @@ void graphics::demo() const
 
 		tl = {x, y};
 		sz = {gap, gap};
-		br = {x+gap, y+gap};
+		br = {x + gap, y + gap};
 
-		switch (is_in_bounds(br))
-		{
+		switch (is_in_bounds(br)) {
 		case BOUNDS_OK:
 			DBG("BOUNDS_OK");
 			break;
@@ -585,13 +523,14 @@ void graphics::demo() const
 	y += gap;
 	x = 0;
 
-	for (color::const_iterator it = _colors->cbegin(); it != _colors->cend(); x += gap, it++) {
+	for (color::const_iterator it = _colors->cbegin();
+	     it != _colors->cend(); x += gap, it++) {
 		std::string s = std::to_string(it->first);
 		color_idx c = white;
 
 		tl = {x, y};
 		sz = {gap, gap};
-		br = {x+gap, y+gap};
+		br = {x + gap, y + gap};
 
 		switch (is_in_bounds(br)) {
 		case BOUNDS_OK:
@@ -603,7 +542,7 @@ void graphics::demo() const
 			y += gap;
 			x = 0;
 			tl = {x, y};
-		break;
+			break;
 		case BOUNDS_Y_OUT:
 			DBG("BOUNDS_Y_OUT");
 			return;
@@ -613,7 +552,7 @@ void graphics::demo() const
 		default:
 			DBG("BOUNDS_BOTH_OUT");
 			return;
-	  }
+		}
 
 		draw_rect(tl, sz, it->first, false);
 		p = {x + 10, y + 10};
@@ -623,10 +562,10 @@ void graphics::demo() const
 	XFlush(_display);
 
 	// lines
-	y += gap*2;
+	y += gap * 2;
 	x = gap;
 	tl = {x, y};
-	br = {x+6*gap, y+gap};
+	br = {x + 6 * gap, y + gap};
 	draw_line(tl, br, bright_yellow);
 
 	XFlush(_display);
@@ -650,7 +589,7 @@ void graphics::demo() const
 			continue;
 		}
 
-		p = {x+i*2, y+i};
+		p = {x + i * 2, y + i};
 		if (is_in_bounds(p) != BOUNDS_OK) {
 			break;
 		}
